@@ -7,16 +7,12 @@ import numpy as np
 
 class ScaleType:
     """Типи шкал для експертного оцінювання"""
-    ORDINAL = "Порядкова"
-    INTEGER = "Цілочислова (9)"
-    BALANCED_3 = "Збалансована (3)"
-    BALANCED_5 = "Збалансована (5)"
-    BALANCED_9 = "Збалансована (9)"
-    POWER_3 = "Степенева (3)"
-    POWER_5 = "Степенева (5)"
-    POWER_9 = "Степенева (9)"
-    MA_ZHENG = "Ма-Чженга"
-    DONEGAN = "Донегана-Додд-МакМастера"
+    INTEGER = "Цілочислова"
+    BALANCED = "Збалансована"
+    POWER = "Степенева"
+    MA_ZHENG = "Ма-Чженґа (9/9–9/1)"
+    DONEGAN = "Донеган–Додд–МакМастер"
+    ORDINAL = "Ординальна"
 
 
 class Scale:
@@ -47,11 +43,11 @@ class Scale:
 
 
 class OrdinalScale(Scale):
-    """Порядкова шкала (2 градації)"""
+    """Ординальна шкала (2 градації)"""
 
     def __init__(self):
         super().__init__(ScaleType.ORDINAL, 2)
-        self.labels = ["Менше", "Більше"]
+        self.labels = ["Менше", "Сильно"]
 
     def _calculate_values(self):
         return [1.0, 9.0]
@@ -63,15 +59,15 @@ class IntegerScale(Scale):
     def __init__(self):
         super().__init__(ScaleType.INTEGER, 9)
         self.labels = [
-            "Рівноцінно",
-            "Незначно краще",
-            "Слабко краще",
-            "Помірно краще",
-            "Сильно краще",
-            "Дуже сильно краще",
-            "Очевидно краще",
-            "Явно краще",
-            "Абсолютно краще"
+            "Менше",
+            "Слабке або незначно",
+            "Середнє",
+            "Більше ніж середнє",
+            "Сильно",
+            "Більше ніж сильно",
+            "Дуже сильно",
+            "Дуже-дуже сильно",
+            "Абсолютно"
         ]
 
     def _calculate_values(self):
@@ -81,10 +77,29 @@ class IntegerScale(Scale):
 class BalancedScale(Scale):
     """Збалансована шкала: a = w/(1-w)"""
 
-    def __init__(self, gradations):
-        if gradations not in [3, 5, 9]:
-            raise ValueError("Збалансована шкала підтримує 3, 5 або 9 градацій")
-        super().__init__(f"{ScaleType.BALANCED_3.split(' ')[0]} ({gradations})", gradations)
+    def __init__(self, gradations=9):
+        if gradations not in [3, 9]:
+            raise ValueError("Збалансована шкала підтримує 3 або 9 градацій")
+        super().__init__(ScaleType.BALANCED, gradations)
+
+        if gradations == 9:
+            self.labels = [
+                "Менше",
+                "Слабке або незначно",
+                "Середнє",
+                "Більше ніж середнє",
+                "Сильно",
+                "Більше ніж сильно",
+                "Дуже сильно",
+                "Дуже-дуже сильно",
+                "Абсолютно"
+            ]
+        else:  # 3 градації
+            self.labels = [
+                "Менше",
+                "Слабке або незначно",
+                "Сильно"
+            ]
 
     def _calculate_values(self):
         n = self.gradations
@@ -99,10 +114,29 @@ class BalancedScale(Scale):
 class PowerScale(Scale):
     """Степенева шкала: a = ⁸√(9^(x-1))"""
 
-    def __init__(self, gradations):
-        if gradations not in [3, 5, 9]:
-            raise ValueError("Степенева шкала підтримує 3, 5 або 9 градацій")
-        super().__init__(f"{ScaleType.POWER_3.split(' ')[0]} ({gradations})", gradations)
+    def __init__(self, gradations=9):
+        if gradations not in [3, 9]:
+            raise ValueError("Степенева шкала підтримує 3 або 9 градацій")
+        super().__init__(ScaleType.POWER, gradations)
+
+        if gradations == 9:
+            self.labels = [
+                "Менше",
+                "Слабке або незначно",
+                "Середнє",
+                "Більше ніж середнє",
+                "Сильно",
+                "Більше ніж сильно",
+                "Дуже сильно",
+                "Дуже-дуже сильно",
+                "Абсолютно"
+            ]
+        else:  # 3 градації
+            self.labels = [
+                "Менше",
+                "Слабке або незначно",
+                "Сильно"
+            ]
 
     def _calculate_values(self):
         n = self.gradations
@@ -114,69 +148,71 @@ class PowerScale(Scale):
 
 
 class MaZhengScale(Scale):
-    """Шкала Ма-Чженга: a = y/(y+1-x)"""
+    """Шкала Ма-Чженґа (9/9–9/1)"""
 
     def __init__(self):
-        self.y = 9
         super().__init__(ScaleType.MA_ZHENG, 9)
+        self.labels = [
+            "Менше",
+            "Слабке або незначно",
+            "Середнє",
+            "Більше ніж середнє",
+            "Сильно",
+            "Більше ніж сильно",
+            "Дуже сильно",
+            "Дуже-дуже сильно",
+            "Абсолютно"
+        ]
 
     def _calculate_values(self):
+        # Внутрішні значення: 9/9, 9/8, 9/7, 9/6, 9/5, 9/4, 9/3, 9/2, 9/1
         values = []
-        for x in range(1, 10):
-            a = self.y / (self.y + 1 - x)
-            values.append(a)
+        for i in range(9, 0, -1):
+            values.append(9.0 / i)
         return values
 
 
 class DoneganScale(Scale):
-    """Шкала Донегана-Додд-МакМастера: a = exp[arctanh((x-1)/(h-1))]"""
+    """Шкала Донеган–Додд–МакМастер"""
 
     def __init__(self):
-        self.h = 9
         super().__init__(ScaleType.DONEGAN, 9)
+        self.labels = [
+            "Менше",
+            "Слабке або незначно",
+            "Середнє",
+            "Більше ніж середнє",
+            "Сильно",
+            "Більше ніж сильно",
+            "Дуже сильно",
+            "Дуже-дуже сильно",
+            "Абсолютно"
+        ]
 
     def _calculate_values(self):
-        values = []
-        for x in range(1, 10):
-            if self.h > 1:
-                arg = (x - 1) / (self.h - 1)
-                # arctanh(z) = 0.5 * ln((1+z)/(1-z))
-                if abs(arg) < 0.99:  # Запобігаємо переповненню
-                    arctanh_val = 0.5 * np.log((1 + arg) / (1 - arg))
-                    a = np.exp(arctanh_val)
-                elif arg >= 0.99:
-                    # Для arg близького до 1, використовуємо велике значення
-                    a = 9.0  # максимальне значення шкали
-                else:
-                    a = 1.0
-            else:
-                a = 1.0
-            values.append(a)
-        return values
+        # Внутрішні значення рівнів згідно зі шкалою Донеган–Додд–МакМастер
+        return [1.0, 1.132, 1.287, 1.477, 1.720, 2.060, 2.600, 3.732, 9.0]
 
 
-def get_scale(scale_name):
-    """Фабрика для створення об'єктів шкал"""
-    if scale_name == ScaleType.ORDINAL:
-        return OrdinalScale()
-    elif scale_name == ScaleType.INTEGER:
+def get_scale(scale_name, gradations=9):
+    """Фабрика для створення об'єктів шкал
+
+    Args:
+        scale_name: Назва шкали
+        gradations: Кількість градацій (для збалансованої та степеневої шкал)
+    """
+    if scale_name == ScaleType.INTEGER:
         return IntegerScale()
-    elif scale_name == ScaleType.BALANCED_3:
-        return BalancedScale(3)
-    elif scale_name == ScaleType.BALANCED_5:
-        return BalancedScale(5)
-    elif scale_name == ScaleType.BALANCED_9:
-        return BalancedScale(9)
-    elif scale_name == ScaleType.POWER_3:
-        return PowerScale(3)
-    elif scale_name == ScaleType.POWER_5:
-        return PowerScale(5)
-    elif scale_name == ScaleType.POWER_9:
-        return PowerScale(9)
+    elif scale_name == ScaleType.BALANCED:
+        return BalancedScale(gradations)
+    elif scale_name == ScaleType.POWER:
+        return PowerScale(gradations)
     elif scale_name == ScaleType.MA_ZHENG:
         return MaZhengScale()
     elif scale_name == ScaleType.DONEGAN:
         return DoneganScale()
+    elif scale_name == ScaleType.ORDINAL:
+        return OrdinalScale()
     else:
         return IntegerScale()  # за замовчуванням
 
@@ -184,14 +220,10 @@ def get_scale(scale_name):
 def get_all_scale_names():
     """Отримати список всіх доступних шкал"""
     return [
-        ScaleType.ORDINAL,
         ScaleType.INTEGER,
-        ScaleType.BALANCED_3,
-        ScaleType.BALANCED_5,
-        ScaleType.BALANCED_9,
-        ScaleType.POWER_3,
-        ScaleType.POWER_5,
-        ScaleType.POWER_9,
+        ScaleType.BALANCED,
+        ScaleType.POWER,
         ScaleType.MA_ZHENG,
-        ScaleType.DONEGAN
+        ScaleType.DONEGAN,
+        ScaleType.ORDINAL
     ]
