@@ -129,10 +129,11 @@ class ComparisonPanel(ttk.Frame):
 
         # Поточна вибрана шкала та градації
         self.scale_var = tk.StringVar(value=ScaleType.INTEGER)
-        self.gradations_var = tk.IntVar(value=9)
+        self.gradations_var = tk.IntVar(value=3)  # Початкова кількість градацій - 3
         self.selected_section = None
 
         self._create_widgets()
+        self._update_gradations_label()  # Ініціалізувати стан кнопок градацій
         self._update_display()
 
     def _generate_pairs(self):
@@ -165,20 +166,39 @@ class ComparisonPanel(ttk.Frame):
             )
             rb.pack(anchor='w', padx=10, pady=5)
 
-        # Перемикач градацій (для збалансованої та степеневої)
+        # Кнопки для зміни градацій
         self.gradations_frame = ttk.Frame(left_panel)
-        self.gradations_frame.pack(anchor='w', padx=10, pady=10)
+        self.gradations_frame.pack(anchor='w', padx=10, pady=10, fill='x')
 
-        ttk.Label(self.gradations_frame, text="Градацій:").pack(side='left', padx=5)
-        self.gradations_combo = ttk.Combobox(
-            self.gradations_frame,
-            textvariable=self.gradations_var,
-            values=[3, 9],
-            state='readonly',
-            width=5
+        ttk.Label(self.gradations_frame, text="Градації:").pack(anchor='w', pady=5)
+
+        # Кнопки +/-
+        buttons_frame = ttk.Frame(self.gradations_frame)
+        buttons_frame.pack(anchor='w', pady=5)
+
+        self.minus_btn = ttk.Button(
+            buttons_frame,
+            text="− Прибрати градацію",
+            command=self._decrease_gradations,
+            width=20
         )
-        self.gradations_combo.pack(side='left', padx=5)
-        self.gradations_combo.bind('<<ComboboxSelected>>', self._on_gradations_changed)
+        self.minus_btn.pack(pady=2, fill='x')
+
+        self.plus_btn = ttk.Button(
+            buttons_frame,
+            text="+ Додати градацію",
+            command=self._increase_gradations,
+            width=20
+        )
+        self.plus_btn.pack(pady=2, fill='x')
+
+        # Лейбл для відображення поточної кількості
+        self.gradations_label = ttk.Label(
+            self.gradations_frame,
+            text=f"Поточно: {self.gradations_var.get()} з 9",
+            font=('Arial', 9)
+        )
+        self.gradations_label.pack(anchor='w', pady=5)
 
         # ===== ПРАВА ПАНЕЛЬ - Бар та кнопки =====
         right_panel = ttk.Frame(main_container)
@@ -236,27 +256,51 @@ class ComparisonPanel(ttk.Frame):
 
     def _on_scale_changed(self, event=None):
         """Обробник зміни шкали"""
-        scale_name = self.scale_var.get()
+        # Скинути градації до 3
+        self.gradations_var.set(3)
 
-        # Показати/сховати перемикач градацій
-        if scale_name in [ScaleType.BALANCED, ScaleType.POWER]:
-            self.gradations_frame.pack(anchor='w', padx=10, pady=10)
+        # Скинути вибір секції
+        self.selected_section = None
+
+        # Оновити лейбл градацій
+        self._update_gradations_label()
+
+        # Перемалювати бар
+        self._draw_bar()
+
+    def _increase_gradations(self):
+        """Збільшити кількість градацій на 1"""
+        current = self.gradations_var.get()
+        if current < 9:
+            self.gradations_var.set(current + 1)
+            self._update_gradations_label()
+            self.selected_section = None
+            self._draw_bar()
+
+    def _decrease_gradations(self):
+        """Зменшити кількість градацій на 1"""
+        current = self.gradations_var.get()
+        if current > 3:
+            self.gradations_var.set(current - 1)
+            self._update_gradations_label()
+            self.selected_section = None
+            self._draw_bar()
+
+    def _update_gradations_label(self):
+        """Оновити лейбл з поточною кількістю градацій"""
+        current = self.gradations_var.get()
+        self.gradations_label.config(text=f"Поточно: {current} з 9")
+
+        # Оновити стан кнопок
+        if current <= 3:
+            self.minus_btn.config(state='disabled')
         else:
-            self.gradations_frame.pack_forget()
+            self.minus_btn.config(state='normal')
 
-        # Скинути вибір секції
-        self.selected_section = None
-
-        # Перемалювати бар
-        self._draw_bar()
-
-    def _on_gradations_changed(self, event=None):
-        """Обробник зміни кількості градацій"""
-        # Скинути вибір секції
-        self.selected_section = None
-
-        # Перемалювати бар
-        self._draw_bar()
+        if current >= 9:
+            self.plus_btn.config(state='disabled')
+        else:
+            self.plus_btn.config(state='normal')
 
     def _on_canvas_resize(self, event=None):
         """Обробник зміни розміру canvas"""
@@ -265,11 +309,7 @@ class ComparisonPanel(ttk.Frame):
     def _on_bar_click(self, event):
         """Обробник кліку по бару"""
         # Визначити на яку секцію клікнули
-        scale_name = self.scale_var.get()
-        gradations = self.gradations_var.get() if scale_name in [ScaleType.BALANCED, ScaleType.POWER] else 9
-
-        if scale_name == ScaleType.ORDINAL:
-            gradations = 2
+        gradations = self.gradations_var.get()
 
         canvas_width = self.bar_canvas.winfo_width()
         section_width = canvas_width / gradations
@@ -285,10 +325,7 @@ class ComparisonPanel(ttk.Frame):
         self.bar_canvas.delete('all')
 
         scale_name = self.scale_var.get()
-        gradations = self.gradations_var.get() if scale_name in [ScaleType.BALANCED, ScaleType.POWER] else 9
-
-        if scale_name == ScaleType.ORDINAL:
-            gradations = 2
+        gradations = self.gradations_var.get()
 
         scale = get_scale(scale_name, gradations)
 
@@ -387,10 +424,7 @@ class ComparisonPanel(ttk.Frame):
         i, j = self.pairs[self.current_pair]
 
         scale_name = self.scale_var.get()
-        gradations = self.gradations_var.get() if scale_name in [ScaleType.BALANCED, ScaleType.POWER] else 9
-
-        if scale_name == ScaleType.ORDINAL:
-            gradations = 2
+        gradations = self.gradations_var.get()
 
         scale = get_scale(scale_name, gradations)
 
