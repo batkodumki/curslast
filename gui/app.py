@@ -127,7 +127,13 @@ class ComparisonPanel(ttk.Frame):
         self.comparisons = []
         self.pairs = self._generate_pairs()
 
+        # Поточна вибрана шкала та градації
+        self.scale_var = tk.StringVar(value=ScaleType.INTEGER)
+        self.gradations_var = tk.IntVar(value=3)  # Початкова кількість градацій - 3
+        self.selected_section = None
+
         self._create_widgets()
+        self._update_gradations_label()  # Ініціалізувати стан кнопок градацій
         self._update_display()
 
     def _generate_pairs(self):
@@ -139,168 +145,248 @@ class ComparisonPanel(ttk.Frame):
         return pairs
 
     def _create_widgets(self):
-        # Заголовок
-        title = ttk.Label(self, text="Парні порівняння", font=('Arial', 16, 'bold'))
-        title.pack(pady=20)
+        # Головний контейнер - горизонтальне розділення
+        main_container = ttk.Frame(self)
+        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+
+        # ===== ЛІВА ПАНЕЛЬ - Підбір шкали =====
+        left_panel = ttk.LabelFrame(main_container, text="Підбір шкали", width=200)
+        left_panel.pack(side='left', fill='y', padx=(0, 10))
+        left_panel.pack_propagate(False)
+
+        # Radio buttons для вибору шкали
+        scales = get_all_scale_names()
+        for scale_name in scales:
+            rb = ttk.Radiobutton(
+                left_panel,
+                text=scale_name,
+                variable=self.scale_var,
+                value=scale_name,
+                command=self._on_scale_changed
+            )
+            rb.pack(anchor='w', padx=10, pady=5)
+
+        # Кнопки для зміни градацій
+        self.gradations_frame = ttk.Frame(left_panel)
+        self.gradations_frame.pack(anchor='w', padx=10, pady=10, fill='x')
+
+        ttk.Label(self.gradations_frame, text="Градації:").pack(anchor='w', pady=5)
+
+        # Кнопки +/-
+        buttons_frame = ttk.Frame(self.gradations_frame)
+        buttons_frame.pack(anchor='w', pady=5)
+
+        self.minus_btn = ttk.Button(
+            buttons_frame,
+            text="− Прибрати градацію",
+            command=self._decrease_gradations,
+            width=20
+        )
+        self.minus_btn.pack(pady=2, fill='x')
+
+        self.plus_btn = ttk.Button(
+            buttons_frame,
+            text="+ Додати градацію",
+            command=self._increase_gradations,
+            width=20
+        )
+        self.plus_btn.pack(pady=2, fill='x')
+
+        # Лейбл для відображення поточної кількості
+        self.gradations_label = ttk.Label(
+            self.gradations_frame,
+            text=f"Поточно: {self.gradations_var.get()} з 9",
+            font=('Arial', 9)
+        )
+        self.gradations_label.pack(anchor='w', pady=5)
+
+        # ===== ПРАВА ПАНЕЛЬ - Бар та кнопки =====
+        right_panel = ttk.Frame(main_container)
+        right_panel.pack(side='left', fill='both', expand=True)
 
         # Прогрес
-        self.progress_label = ttk.Label(self, text="", font=('Arial', 10))
+        self.progress_label = ttk.Label(right_panel, text="", font=('Arial', 10))
         self.progress_label.pack(pady=5)
 
-        self.progress_bar = ttk.Progressbar(
-            self,
-            length=400,
-            mode='determinate'
-        )
-        self.progress_bar.pack(pady=10)
+        # Заголовок з назвами альтернатив та "впливає Більше"
+        header_frame = ttk.Frame(right_panel)
+        header_frame.pack(fill='x', pady=10)
 
-        # Питання
-        self.question_label = ttk.Label(
-            self,
-            text="",
-            font=('Arial', 12),
-            wraplength=500
-        )
-        self.question_label.pack(pady=20)
+        self.obj_a_label = ttk.Label(header_frame, text="Object A", font=('Arial', 11))
+        self.obj_a_label.pack(side='left')
 
-        # Вибір шкали
-        scale_frame = ttk.Frame(self)
-        scale_frame.pack(pady=10)
+        center_label = ttk.Label(header_frame, text="впливає Більше", font=('Arial', 11, 'bold'))
+        center_label.pack(side='left', expand=True)
 
-        ttk.Label(scale_frame, text="Оберіть шкалу оцінювання:").pack(side='left', padx=5)
+        self.obj_b_label = ttk.Label(header_frame, text="Object B", font=('Arial', 11))
+        self.obj_b_label.pack(side='right')
 
-        self.scale_var = tk.StringVar(value=ScaleType.INTEGER)
-        self.scale_combo = ttk.Combobox(
-            scale_frame,
-            textvariable=self.scale_var,
-            values=get_all_scale_names(),
-            state='readonly',
-            width=30
-        )
-        self.scale_combo.pack(side='left', padx=5)
-        self.scale_combo.bind('<<ComboboxSelected>>', self._on_scale_changed)
+        # Canvas для горизонтального бара
+        self.bar_canvas = tk.Canvas(right_panel, height=80, bg='white')
+        self.bar_canvas.pack(fill='x', pady=10)
+        self.bar_canvas.bind('<Configure>', self._on_canvas_resize)
+        self.bar_canvas.bind('<Button-1>', self._on_bar_click)
 
-        # Вибір градації
-        gradation_frame = ttk.Frame(self)
-        gradation_frame.pack(pady=20, fill='x', padx=50)
-
-        self.gradation_label = ttk.Label(gradation_frame, text="Оберіть ступінь переваги:")
-        self.gradation_label.pack(pady=5)
-
-        # Слайдер
-        slider_frame = ttk.Frame(gradation_frame)
-        slider_frame.pack(fill='x', pady=10)
-
-        self.gradation_var = tk.IntVar(value=0)
-        self.gradation_scale = ttk.Scale(
-            slider_frame,
-            from_=0,
-            to=8,
-            orient='horizontal',
-            variable=self.gradation_var,
-            command=self._on_gradation_changed
-        )
-        self.gradation_scale.pack(fill='x', pady=5)
-
-        self.gradation_value_label = ttk.Label(
-            slider_frame,
-            text="",
-            font=('Arial', 10)
-        )
-        self.gradation_value_label.pack(pady=5)
-
-        # Візуалізація (текстова)
-        self.visualization_label = ttk.Label(
-            self,
-            text="⚖️",
-            font=('Arial', 48)
-        )
-        self.visualization_label.pack(pady=20)
-
-        # Кнопки навігації
-        button_frame = ttk.Frame(self)
-        button_frame.pack(pady=20)
-
-        back_btn = ttk.Button(
-            button_frame,
-            text="← Назад",
-            command=self._go_back
-        )
-        back_btn.pack(side='left', padx=10)
-
-        skip_btn = ttk.Button(
-            button_frame,
-            text="Пропустити",
-            command=self._skip_pair
-        )
-        skip_btn.pack(side='left', padx=10)
-
+        # Кнопка "Підтверджую"
         confirm_btn = ttk.Button(
-            button_frame,
-            text="Підтвердити →",
+            right_panel,
+            text="Підтверджую",
             command=self._confirm_comparison,
             style='Accent.TButton'
         )
-        confirm_btn.pack(side='left', padx=10)
+        confirm_btn.pack(pady=20)
 
-        # Кнопка повернення до введення
+        # Кнопки навігації внизу
+        nav_frame = ttk.Frame(right_panel)
+        nav_frame.pack(pady=10)
+
+        back_btn = ttk.Button(
+            nav_frame,
+            text="← Попередня пара",
+            command=self._go_back
+        )
+        back_btn.pack(side='left', padx=5)
+
         return_btn = ttk.Button(
-            self,
-            text="⬅ Повернутися до введення альтернатив",
+            nav_frame,
+            text="Повернутися до введення",
             command=self.on_back
         )
-        return_btn.pack(pady=10)
+        return_btn.pack(side='left', padx=5)
 
     def _on_scale_changed(self, event=None):
         """Обробник зміни шкали"""
-        scale_name = self.scale_var.get()
-        scale = get_scale(scale_name)
+        # Скинути градації до 3
+        self.gradations_var.set(3)
 
-        # Оновити діапазон слайдера
-        self.gradation_scale.config(to=scale.gradations - 1)
+        # Скинути вибір секції
+        self.selected_section = None
 
-        # Скинути значення
-        self.gradation_var.set(0)
+        # Оновити лейбл градацій
+        self._update_gradations_label()
 
-        self._update_gradation_display()
+        # Перемалювати бар
+        self._draw_bar()
 
-    def _on_gradation_changed(self, value=None):
-        """Обробник зміни градації"""
-        self._update_gradation_display()
+    def _increase_gradations(self):
+        """Збільшити кількість градацій на 1"""
+        current = self.gradations_var.get()
+        if current < 9:
+            self.gradations_var.set(current + 1)
+            self._update_gradations_label()
+            self.selected_section = None
+            self._draw_bar()
 
-    def _update_gradation_display(self):
-        """Оновити відображення поточної градації"""
-        scale_name = self.scale_var.get()
-        scale = get_scale(scale_name)
-        gradation = int(self.gradation_var.get())
+    def _decrease_gradations(self):
+        """Зменшити кількість градацій на 1"""
+        current = self.gradations_var.get()
+        if current > 3:
+            self.gradations_var.set(current - 1)
+            self._update_gradations_label()
+            self.selected_section = None
+            self._draw_bar()
 
-        value = scale.get_value(gradation)
-        unified_value = scale.unify(gradation)
+    def _update_gradations_label(self):
+        """Оновити лейбл з поточною кількістю градацій"""
+        current = self.gradations_var.get()
+        self.gradations_label.config(text=f"Поточно: {current} з 9")
 
-        # Показати мітку (якщо є)
-        label_text = ""
-        if hasattr(scale, 'labels') and gradation < len(scale.labels):
-            label_text = f"{scale.labels[gradation]} "
-
-        self.gradation_value_label.config(
-            text=f"{label_text}(значення: {value:.2f}, уніфіковане: {unified_value:.2f})"
-        )
-
-        # Оновити візуалізацію
-        self._update_visualization(unified_value)
-
-    def _update_visualization(self, value):
-        """Оновити візуалізацію ваг"""
-        if value > 5:
-            symbol = "⚖️➡️"  # сильно вправо
-        elif value > 2:
-            symbol = "⚖️→"   # вправо
-        elif value > 1.5:
-            symbol = "⚖️"    # збалансовано
+        # Оновити стан кнопок
+        if current <= 3:
+            self.minus_btn.config(state='disabled')
         else:
-            symbol = "⚖️"
+            self.minus_btn.config(state='normal')
 
-        self.visualization_label.config(text=symbol)
+        if current >= 9:
+            self.plus_btn.config(state='disabled')
+        else:
+            self.plus_btn.config(state='normal')
+
+    def _on_canvas_resize(self, event=None):
+        """Обробник зміни розміру canvas"""
+        self._draw_bar()
+
+    def _on_bar_click(self, event):
+        """Обробник кліку по бару"""
+        # Визначити на яку секцію клікнули
+        gradations = self.gradations_var.get()
+
+        canvas_width = self.bar_canvas.winfo_width()
+        section_width = canvas_width / gradations
+
+        section_index = int(event.x / section_width)
+        if 0 <= section_index < gradations:
+            self.selected_section = section_index
+            self._draw_bar()
+
+    def _draw_bar(self):
+        """Намалювати горизонтальний бар з секціями"""
+        # Очистити canvas
+        self.bar_canvas.delete('all')
+
+        scale_name = self.scale_var.get()
+        gradations = self.gradations_var.get()
+
+        scale = get_scale(scale_name, gradations)
+
+        canvas_width = self.bar_canvas.winfo_width()
+        canvas_height = self.bar_canvas.winfo_height()
+
+        if canvas_width < 10:  # canvas ще не ініціалізовано
+            return
+
+        bar_height = 40
+        bar_y = 30
+        section_width = canvas_width / gradations
+
+        # Намалювати секції
+        for i in range(gradations):
+            x1 = i * section_width
+            x2 = (i + 1) * section_width
+
+            # Колір секції - червоний, але темніший для вибраної
+            if self.selected_section == i:
+                fill_color = '#cc0000'
+            else:
+                fill_color = '#ff4444'
+
+            # Намалювати прямокутник секції
+            self.bar_canvas.create_rectangle(
+                x1, bar_y, x2, bar_y + bar_height,
+                fill=fill_color,
+                outline='#880000',
+                width=2
+            )
+
+            # Підпис секції
+            if hasattr(scale, 'labels') and i < len(scale.labels):
+                label = scale.labels[i]
+                # Розмістити текст над секцією
+                text_x = x1 + section_width / 2
+                self.bar_canvas.create_text(
+                    text_x, bar_y - 10,
+                    text=label,
+                    font=('Arial', 8),
+                    anchor='s'
+                )
+
+        # Додати підписи "Менше" та "Сильно / Абсолютно"
+        # Ліворуч внизу
+        # self.bar_canvas.create_text(
+        #     5, bar_y + bar_height + 15,
+        #     text="Менше",
+        #     font=('Arial', 9),
+        #     anchor='w'
+        # )
+
+        # Праворуч внизу
+        # last_label = "Абсолютно" if gradations == 9 else "Сильно"
+        # self.bar_canvas.create_text(
+        #     canvas_width - 5, bar_y + bar_height + 15,
+        #     text=last_label,
+        #     font=('Arial', 9),
+        #     anchor='e'
+        # )
 
     def _update_display(self):
         """Оновити відображення поточної пари"""
@@ -311,42 +397,44 @@ class ComparisonPanel(ttk.Frame):
         i, j = self.pairs[self.current_pair]
 
         # Оновити прогрес
-        progress = (self.current_pair / self.total_pairs) * 100
-        self.progress_bar['value'] = progress
         self.progress_label.config(
             text=f"Порівняння {self.current_pair + 1} з {self.total_pairs}"
         )
 
-        # Оновити питання
-        question = f"Наскільки '{self.alternatives[i]}' краще ніж '{self.alternatives[j]}'?"
-        self.question_label.config(text=question)
+        # Оновити назви альтернатив
+        self.obj_a_label.config(text=self.alternatives[i])
+        self.obj_b_label.config(text=self.alternatives[j])
 
-        # Оновити градацію
-        self._on_scale_changed()
+        # Скинути вибір
+        self.selected_section = None
+
+        # Перемалювати бар
+        self._draw_bar()
 
     def _confirm_comparison(self):
         """Підтвердити поточне порівняння"""
+        # Перевірити чи вибрано секцію
+        if self.selected_section is None:
+            messagebox.showwarning(
+                "Попередження",
+                "Будь ласка, виберіть рівень впливу, клікнувши на секції бара"
+            )
+            return
+
         i, j = self.pairs[self.current_pair]
 
         scale_name = self.scale_var.get()
-        scale = get_scale(scale_name)
-        gradation = int(self.gradation_var.get())
+        gradations = self.gradations_var.get()
+
+        scale = get_scale(scale_name, gradations)
 
         # Отримати уніфіковане значення
-        unified_value = scale.unify(gradation)
+        unified_value = scale.unify(self.selected_section)
 
         # Зберегти порівняння
         self.comparisons.append((i, j, unified_value))
 
         # Наступна пара
-        self.current_pair += 1
-        self._update_display()
-
-    def _skip_pair(self):
-        """Пропустити поточну пару (використати нейтральне значення)"""
-        i, j = self.pairs[self.current_pair]
-        self.comparisons.append((i, j, 1.0))  # нейтральне значення
-
         self.current_pair += 1
         self._update_display()
 

@@ -5,18 +5,53 @@
 import numpy as np
 
 
+def get_progressive_labels(gradations):
+    """Отримати підписи для поточної кількості градацій (3-9)
+
+    Args:
+        gradations: Кількість градацій від 3 до 9
+
+    Returns:
+        Список підписів для сегментів
+    """
+    # Повний набір підписів для 9 градацій
+    all_labels = [
+        "Менше",                    # 1
+        "Слабко або незначно",      # 2
+        "Середнє",                  # 3 (додається при 4 градаціях)
+        "Більше ніж середнє",       # 4 (додається при 5 градаціях)
+        "Сильно",                   # 5
+        "Більше ніж сильно",        # 6 (додається при 6 градаціях)
+        "Дуже сильно",              # 7 (додається при 7 градаціях)
+        "Дуже-дуже сильно",         # 8 (додається при 8 градаціях)
+        "Абсолютно"                 # 9 (додається при 9 градаціях)
+    ]
+
+    # Індекси для кожної кількості градацій
+    label_indices = {
+        3: [0, 1, 4],                      # Менше, Слабко або незначно, Сильно
+        4: [0, 1, 2, 4],                   # + Середнє
+        5: [0, 1, 2, 3, 4],                # + Більше ніж середнє
+        6: [0, 1, 2, 3, 4, 5],             # + Більше ніж сильно
+        7: [0, 1, 2, 3, 4, 5, 6],          # + Дуже сильно
+        8: [0, 1, 2, 3, 4, 5, 6, 7],       # + Дуже-дуже сильно
+        9: [0, 1, 2, 3, 4, 5, 6, 7, 8]     # + Абсолютно
+    }
+
+    if gradations not in label_indices:
+        gradations = 9
+
+    indices = label_indices[gradations]
+    return [all_labels[i] for i in indices]
+
+
 class ScaleType:
     """Типи шкал для експертного оцінювання"""
-    ORDINAL = "Порядкова"
-    INTEGER = "Цілочислова (9)"
-    BALANCED_3 = "Збалансована (3)"
-    BALANCED_5 = "Збалансована (5)"
-    BALANCED_9 = "Збалансована (9)"
-    POWER_3 = "Степенева (3)"
-    POWER_5 = "Степенева (5)"
-    POWER_9 = "Степенева (9)"
-    MA_ZHENG = "Ма-Чженга"
-    DONEGAN = "Донегана-Додд-МакМастера"
+    INTEGER = "Цілочислова"
+    BALANCED = "Збалансована"
+    POWER = "Степенева"
+    MA_ZHENG = "Ма-Чженґа (9/9–9/1)"
+    DONEGAN = "Донеган–Додд–МакМастер"
 
 
 class Scale:
@@ -46,45 +81,36 @@ class Scale:
         return l + (i - 0.5) * (p - l) / n
 
 
-class OrdinalScale(Scale):
-    """Порядкова шкала (2 градації)"""
-
-    def __init__(self):
-        super().__init__(ScaleType.ORDINAL, 2)
-        self.labels = ["Менше", "Більше"]
-
-    def _calculate_values(self):
-        return [1.0, 9.0]
-
-
 class IntegerScale(Scale):
-    """Цілочислова шкала (9 градацій)"""
+    """Цілочислова шкала (3-9 градацій)"""
 
-    def __init__(self):
-        super().__init__(ScaleType.INTEGER, 9)
-        self.labels = [
-            "Рівноцінно",
-            "Незначно краще",
-            "Слабко краще",
-            "Помірно краще",
-            "Сильно краще",
-            "Дуже сильно краще",
-            "Очевидно краще",
-            "Явно краще",
-            "Абсолютно краще"
-        ]
+    def __init__(self, gradations=3):
+        if gradations < 3 or gradations > 9:
+            raise ValueError("Цілочислова шкала підтримує від 3 до 9 градацій")
+        super().__init__(ScaleType.INTEGER, gradations)
+        self.labels = get_progressive_labels(gradations)
 
     def _calculate_values(self):
-        return list(range(1, 10))
+        # Для n градацій вибираємо рівномірно розподілені значення з діапазону 1-9
+        n = self.gradations
+        if n == 9:
+            return list(range(1, 10))
+        else:
+            # Рівномірний підсемплінг з 9 значень
+            all_values = list(range(1, 10))
+            step = 8 / (n - 1)  # 8 це різниця між 9 та 1
+            indices = [int(i * step) for i in range(n)]
+            return [all_values[i] for i in indices]
 
 
 class BalancedScale(Scale):
-    """Збалансована шкала: a = w/(1-w)"""
+    """Збалансована шкала: a = w/(1-w) (3-9 градацій)"""
 
-    def __init__(self, gradations):
-        if gradations not in [3, 5, 9]:
-            raise ValueError("Збалансована шкала підтримує 3, 5 або 9 градацій")
-        super().__init__(f"{ScaleType.BALANCED_3.split(' ')[0]} ({gradations})", gradations)
+    def __init__(self, gradations=3):
+        if gradations < 3 or gradations > 9:
+            raise ValueError("Збалансована шкала підтримує від 3 до 9 градацій")
+        super().__init__(ScaleType.BALANCED, gradations)
+        self.labels = get_progressive_labels(gradations)
 
     def _calculate_values(self):
         n = self.gradations
@@ -97,12 +123,13 @@ class BalancedScale(Scale):
 
 
 class PowerScale(Scale):
-    """Степенева шкала: a = ⁸√(9^(x-1))"""
+    """Степенева шкала: a = 9^((x-1)/(n-1)) (3-9 градацій)"""
 
-    def __init__(self, gradations):
-        if gradations not in [3, 5, 9]:
-            raise ValueError("Степенева шкала підтримує 3, 5 або 9 градацій")
-        super().__init__(f"{ScaleType.POWER_3.split(' ')[0]} ({gradations})", gradations)
+    def __init__(self, gradations=3):
+        if gradations < 3 or gradations > 9:
+            raise ValueError("Степенева шкала підтримує від 3 до 9 градацій")
+        super().__init__(ScaleType.POWER, gradations)
+        self.labels = get_progressive_labels(gradations)
 
     def _calculate_values(self):
         n = self.gradations
@@ -114,84 +141,78 @@ class PowerScale(Scale):
 
 
 class MaZhengScale(Scale):
-    """Шкала Ма-Чженга: a = y/(y+1-x)"""
+    """Шкала Ма-Чженґа (9/9–9/1) (3-9 градацій)"""
 
-    def __init__(self):
-        self.y = 9
-        super().__init__(ScaleType.MA_ZHENG, 9)
+    def __init__(self, gradations=3):
+        if gradations < 3 or gradations > 9:
+            raise ValueError("Шкала Ма-Чженґа підтримує від 3 до 9 градацій")
+        super().__init__(ScaleType.MA_ZHENG, gradations)
+        self.labels = get_progressive_labels(gradations)
 
     def _calculate_values(self):
-        values = []
-        for x in range(1, 10):
-            a = self.y / (self.y + 1 - x)
-            values.append(a)
-        return values
+        # Повний набір для 9 градацій: 9/9, 9/8, 9/7, 9/6, 9/5, 9/4, 9/3, 9/2, 9/1
+        all_values = [9.0 / i for i in range(9, 0, -1)]
+
+        n = self.gradations
+        if n == 9:
+            return all_values
+        else:
+            # Рівномірний підсемплінг
+            step = 8 / (n - 1)  # 8 індексів (від 0 до 8)
+            indices = [int(i * step) for i in range(n)]
+            return [all_values[i] for i in indices]
 
 
 class DoneganScale(Scale):
-    """Шкала Донегана-Додд-МакМастера: a = exp[arctanh((x-1)/(h-1))]"""
+    """Шкала Донеган–Додд–МакМастер (3-9 градацій)"""
 
-    def __init__(self):
-        self.h = 9
-        super().__init__(ScaleType.DONEGAN, 9)
+    def __init__(self, gradations=3):
+        if gradations < 3 or gradations > 9:
+            raise ValueError("Шкала Донеган–Додд–МакМастер підтримує від 3 до 9 градацій")
+        super().__init__(ScaleType.DONEGAN, gradations)
+        self.labels = get_progressive_labels(gradations)
 
     def _calculate_values(self):
-        values = []
-        for x in range(1, 10):
-            if self.h > 1:
-                arg = (x - 1) / (self.h - 1)
-                # arctanh(z) = 0.5 * ln((1+z)/(1-z))
-                if abs(arg) < 0.99:  # Запобігаємо переповненню
-                    arctanh_val = 0.5 * np.log((1 + arg) / (1 - arg))
-                    a = np.exp(arctanh_val)
-                elif arg >= 0.99:
-                    # Для arg близького до 1, використовуємо велике значення
-                    a = 9.0  # максимальне значення шкали
-                else:
-                    a = 1.0
-            else:
-                a = 1.0
-            values.append(a)
-        return values
+        # Повний набір для 9 градацій
+        all_values = [1.0, 1.132, 1.287, 1.477, 1.720, 2.060, 2.600, 3.732, 9.0]
+
+        n = self.gradations
+        if n == 9:
+            return all_values
+        else:
+            # Рівномірний підсемплінг
+            step = 8 / (n - 1)  # 8 індексів (від 0 до 8)
+            indices = [int(i * step) for i in range(n)]
+            return [all_values[i] for i in indices]
 
 
-def get_scale(scale_name):
-    """Фабрика для створення об'єктів шкал"""
-    if scale_name == ScaleType.ORDINAL:
-        return OrdinalScale()
-    elif scale_name == ScaleType.INTEGER:
-        return IntegerScale()
-    elif scale_name == ScaleType.BALANCED_3:
-        return BalancedScale(3)
-    elif scale_name == ScaleType.BALANCED_5:
-        return BalancedScale(5)
-    elif scale_name == ScaleType.BALANCED_9:
-        return BalancedScale(9)
-    elif scale_name == ScaleType.POWER_3:
-        return PowerScale(3)
-    elif scale_name == ScaleType.POWER_5:
-        return PowerScale(5)
-    elif scale_name == ScaleType.POWER_9:
-        return PowerScale(9)
+def get_scale(scale_name, gradations=3):
+    """Фабрика для створення об'єктів шкал
+
+    Args:
+        scale_name: Назва шкали
+        gradations: Кількість градацій (від 3 до 9)
+    """
+    if scale_name == ScaleType.INTEGER:
+        return IntegerScale(gradations)
+    elif scale_name == ScaleType.BALANCED:
+        return BalancedScale(gradations)
+    elif scale_name == ScaleType.POWER:
+        return PowerScale(gradations)
     elif scale_name == ScaleType.MA_ZHENG:
-        return MaZhengScale()
+        return MaZhengScale(gradations)
     elif scale_name == ScaleType.DONEGAN:
-        return DoneganScale()
+        return DoneganScale(gradations)
     else:
-        return IntegerScale()  # за замовчуванням
+        return IntegerScale(gradations)  # за замовчуванням
 
 
 def get_all_scale_names():
     """Отримати список всіх доступних шкал"""
     return [
-        ScaleType.ORDINAL,
         ScaleType.INTEGER,
-        ScaleType.BALANCED_3,
-        ScaleType.BALANCED_5,
-        ScaleType.BALANCED_9,
-        ScaleType.POWER_3,
-        ScaleType.POWER_5,
-        ScaleType.POWER_9,
+        ScaleType.BALANCED,
+        ScaleType.POWER,
         ScaleType.MA_ZHENG,
         ScaleType.DONEGAN
     ]
