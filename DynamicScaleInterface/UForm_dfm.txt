@@ -1,0 +1,267 @@
+object FormDynScaleInt: TFormDynScaleInt
+  Left = 229
+  Top = 142
+  BorderIcons = []
+  BorderStyle = bsSingle
+  Caption = 'Make a choice using visual hints'
+  ClientHeight = 195
+  ClientWidth = 779
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  KeyPreview = True
+  OldCreateOrder = False
+  Position = poDesktopCenter
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnKeyDown = FormKeyDown
+  OnMouseMove = FormMouseMove
+  OnMouseWheel = FormMouseWheel
+  OnMouseWheelDown = FormMouseWheelDown
+  OnMouseWheelUp = FormMouseWheelUp
+  OnShow = FormShow
+  DesignSize = (
+    779
+    195)
+  PixelsPerInch = 96
+  TextHeight = 13
+  object LabelA: TLabel
+    Left = 0
+    Top = 8
+    Width = 150
+    Height = 73
+    AutoSize = False
+    Caption = 'Object A ---- ---- --- '
+    Color = clBtnFace
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clRed
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentColor = False
+    ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
+    WordWrap = True
+  end
+  object LabelB: TLabel
+    Left = 630
+    Top = 8
+    Width = 150
+    Height = 73
+    Anchors = [akTop, akRight]
+    AutoSize = False
+    Caption = 'Object B ---- ---- --- '
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clRed
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
+    WordWrap = True
+  end
+  object LabelIs: TLabel
+    Left = 154
+    Top = 4
+    Width = 14
+    Height = 20
+    Hint = 'is'
+    Caption = 'is'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clRed
+    Font.Height = -16
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object LabelThan: TLabel
+    Left = 589
+    Top = 3
+    Width = 37
+    Height = 20
+    Alignment = taRightJustify
+    Anchors = [akTop, akRight]
+    Caption = 'than'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clRed
+    Font.Height = -16
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object ImageShow: TImage
+    Left = 154
+    Top = 53
+    Width = 476
+    Height = 142
+    Anchors = [akLeft, akTop, akRight]
+    Transparent = True
+    OnMouseMove = FormMouseMove
+  end
+  object PanelScale: TPanel
+    Left = 154
+    Top = 28
+    Width = 475
+    Height = 25
+    Anchors = [akLeft, akTop, akRight]
+    BevelOuter = bvNone
+    TabOrder = 0
+    OnClick = PanelScaleClick
+    object PanelLess: TPanel
+      Left = 0
+      Top = 0
+      Width = 153
+      Height = 25
+      Cursor = crHandPoint
+      Alignment = taLeftJustify
+      Caption = 'Less preferred'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 0
+      OnClick = PanelScaleClick
+      OnMouseMove = PanelScaleMouseMove
+    end
+    object PanelMore: TPanel
+      Left = 152
+      Top = 0
+      Width = 129
+      Height = 25
+      Cursor = crHandPoint
+      Alignment = taLeftJustify
+      Caption = 'More preferred'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 1
+      OnClick = PanelScaleClick
+      OnMouseMove = PanelScaleMouseMove
+    end
+  end
+  object PanelScaleChoice: TPanel
+    Left = 0
+    Top = 80
+    Width = 153
+    Height = 115
+    Hint = 'Scale Type'
+    ParentShowHint = False
+    ShowHint = False
+    TabOrder = 1
+    TabStop = True
+    DesignSize = (
+      153
+      115)
+    object RxSpinButGradChange: TRxSpinButton
+      Left = 113
+      Top = 0
+      Width = 41
+      Height = 27
+      Hint = 'To change the number of gradations on the scale'
+      ShowHint = True
+      ParentShowHint = False
+      OnBottomClick = RxSpinButGradChangeBottomClick
+      OnTopClick = RxSpinButGradChangeTopClick
+    end
+    object RButInteger: TRadioButton
+      Left = 3
+      Top = 29
+      Width = 102
+      Height = 17
+      Cursor = crHandPoint
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Integer'
+      Checked = True
+      Ctl3D = True
+      ParentCtl3D = False
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 0
+      TabStop = True
+      OnClick = PanelScaleChoiceClick
+    end
+    object RButBalanced: TRadioButton
+      Left = 3
+      Top = 61
+      Width = 137
+      Height = 17
+      Cursor = crHandPoint
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Balanced'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 1
+      OnClick = PanelScaleChoiceClick
+    end
+    object RButPower: TRadioButton
+      Left = 3
+      Top = 45
+      Width = 137
+      Height = 17
+      Cursor = crHandPoint
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Power'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 2
+      OnClick = PanelScaleChoiceClick
+    end
+    object RButMaZheng: TRadioButton
+      Left = 3
+      Top = 77
+      Width = 149
+      Height = 17
+      Cursor = crHandPoint
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Ma-Zheng (9/9-9/1)'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 3
+      OnClick = PanelScaleChoiceClick
+    end
+    object RButDodd: TRadioButton
+      Left = 3
+      Top = 93
+      Width = 148
+      Height = 17
+      Cursor = crHandPoint
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Donegan-Dodd-McMasters'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 4
+      OnClick = PanelScaleChoiceClick
+    end
+    object PanelScaleButtonChoice: TPanel
+      Left = 0
+      Top = 0
+      Width = 114
+      Height = 27
+      Cursor = crHandPoint
+      Hint = 'To change Scale Type'
+      BevelOuter = bvLowered
+      Caption = 'Scale Type Choice'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 5
+      OnClick = PanelScaleButtonChoiceClick
+    end
+  end
+  object PanelNoIdea: TPanel
+    Left = 638
+    Top = 128
+    Width = 137
+    Height = 25
+    Cursor = crHandPoint
+    Anchors = [akTop, akRight]
+    Caption = 'No idea'
+    ParentShowHint = False
+    ShowHint = True
+    TabOrder = 2
+    TabStop = True
+    OnClick = PanelNoIdeaClick
+    OnMouseMove = PanelNoIdeaMouseMove
+  end
+end
