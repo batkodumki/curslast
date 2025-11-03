@@ -302,7 +302,7 @@ class DynamicScaleInterface:
         # PanelScaleButtonChoice (lines 237-250)
         self.panel_scale_button_choice = tk.Button(
             self.panel_scale_choice, text='Scale Type Choice',
-            relief='lowered', cursor='hand2',
+            relief='sunken', cursor='hand2',
             font=('MS Sans Serif', 9)
         )
         self.panel_scale_button_choice.place(x=0, y=0, width=114, height=27)
@@ -767,14 +767,14 @@ class DynamicScaleInterface:
 
     def toggle_scale_choice(self):
         """Toggle scale type panel visibility (PanelScaleButtonChoiceClick, lines 518-531)."""
-        if self.panel_scale_button_choice.cget('relief') == 'lowered':
+        if self.panel_scale_button_choice.cget('relief') == 'sunken':
             self.panel_scale_button_choice.config(relief='raised')
             # Disable radio buttons
             for rb in [self.rbut_integer, self.rbut_balanced, self.rbut_power,
                       self.rbut_mazheng, self.rbut_dodd]:
                 rb.config(state='disabled')
         else:
-            self.panel_scale_button_choice.config(relief='lowered')
+            self.panel_scale_button_choice.config(relief='sunken')
             # Enable radio buttons
             for rb in [self.rbut_integer, self.rbut_balanced, self.rbut_power,
                       self.rbut_mazheng, self.rbut_dodd]:
