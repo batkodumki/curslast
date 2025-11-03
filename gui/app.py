@@ -1,10 +1,13 @@
 """
 Головний модуль GUI для системи експертного оцінювання
+Інтегрований з динамічним інтерфейсом шкалування з Delphi
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox
 import numpy as np
+import math
+from typing import List, Optional, Tuple
 
 from gui.scales import get_scale, get_all_scale_names, ScaleType
 from gui.calculations import (
@@ -13,6 +16,146 @@ from gui.calculations import (
     build_comparison_matrix,
     check_consistency
 )
+
+
+# Constants from Delphi implementation
+PREF = [
+    '',  # Index 0 not used
+    'Equally',                # 1
+    'Weakly or slightly',     # 2
+    'Moderately',             # 3
+    'Moderately plus',        # 4
+    'Strongly',               # 5
+    'Strongly plus',          # 6
+    'Very strongly',          # 7
+    'Very, very strongly',    # 8
+    'Extremely'               # 9
+]
+
+LESS_MORE = ['Less', 'More', 'Not sure']
+
+GRADUAL_SCALE = {
+    2: '25',
+    3: '259',
+    4: '3579',
+    5: '23579',
+    6: '234579',
+    7: '2345679',
+    8: '23456789'
+}
+
+
+class GraphicHintWindow(tk.Toplevel):
+    """
+    Custom graphical hint window (TGraphicHint from UGraphicHint.pas).
+    Shows balance scale visualization for comparison values.
+    """
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.withdraw()
+        self.overrideredirect(True)
+        self.configure(bg='white', relief='solid', borderwidth=1)
+
+        self.data = 0.0
+        self.hint_text = ""
+
+        # Canvas for drawing
+        self.canvas = tk.Canvas(self, width=250, height=200, bg='white', highlightthickness=0)
+        self.canvas.pack()
+
+    def show_hint(self, x: int, y: int, text: str, data: float):
+        """Display hint at position with graphical visualization."""
+        self.hint_text = text
+        self.data = data
+
+        # Position window
+        self.geometry(f'+{x+10}+{y+10}')
+
+        # Draw content
+        self.paint()
+
+        # Show
+        self.deiconify()
+        self.lift()
+
+    def hide_hint(self):
+        """Hide the hint window."""
+        self.withdraw()
+
+    def paint(self):
+        """Paint the hint content."""
+        self.canvas.delete('all')
+
+        if self.data == 0.0:
+            # Simple text hint
+            self.canvas.create_text(125, 100, text=self.hint_text, font=('Arial', 10))
+            return
+
+        # Draw hint text at top
+        self.canvas.create_text(125, 15, text=self.hint_text, font=('Arial', 10, 'bold'))
+
+        if self.data < 0:
+            # Scale type diagram
+            scale_info = {
+                -1: 'Integer Scale\n\nLinear: value = grade\n(1 to 9)',
+                -2: 'Balanced Scale\n\nFormula:\n(0.5+(g-1)*0.05)/\n(0.5-(g-1)*0.05)',
+                -3: 'Power Scale\n\nFormula:\n9^((grade-1)/8)',
+                -4: 'Ma-Zheng Scale\n\nFormula:\n9/(9+1-grade)',
+                -5: 'Donegan-Dodd-McMasters\n\nFormula:\nexp(arctanh((g-1)/14*√3))'
+            }
+            text = scale_info.get(self.data, '')
+            self.canvas.create_text(125, 110, text=text, font=('Arial', 9), justify='center')
+        elif self.data < 1:
+            # Object B preferred
+            self.draw_balance_tilted_right()
+            data_ = (1 / self.data) ** (1/3)  # Cube root for scaling
+
+            xe, ye = 25, 25
+
+            # Draw heavier weight on right (Object B)
+            bottom = 180
+            top = bottom - round(ye * data_)
+            left = 180 - round(xe * data_ / 2)
+            right = left + round(xe * data_)
+            self.canvas.create_rectangle(left, top, right, bottom, fill='red', outline='black', width=2)
+
+            # Draw lighter weight on left (Object A)
+            self.canvas.create_rectangle(50, 145, 75, 170, fill='blue', outline='black', width=2)
+        else:
+            # Object A preferred or equal
+            self.draw_balance_tilted_left()
+            data_ = self.data ** (1/3)  # Cube root for scaling
+
+            xe, ye = 25, 25
+
+            # Draw heavier weight on left (Object A)
+            bottom = 180
+            top = bottom - round(ye * data_)
+            left = 70 - round(xe * data_ / 2)
+            right = left + round(xe * data_)
+            self.canvas.create_rectangle(left, top, right, bottom, fill='blue', outline='black', width=2)
+
+            # Draw lighter weight on right (Object B)
+            self.canvas.create_rectangle(180, 145, 205, 170, fill='red', outline='black', width=2)
+
+            if self.data == 1:
+                # Equal - show question mark
+                self.canvas.create_text(125, 100, text='?', font=('Arial', 60), fill='red')
+
+    def draw_balance_tilted_right(self):
+        """Draw balance scale tilted to the right (B heavier)."""
+        # Fulcrum (triangle)
+        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill='gray', outline='black', width=2)
+        # Beam tilted right
+        self.canvas.create_line(40, 125, 210, 105, width=4, fill='brown')
+
+    def draw_balance_tilted_left(self):
+        """Draw balance scale tilted to the left (A heavier)."""
+        # Fulcrum (triangle)
+        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill='gray', outline='black', width=2)
+        # Beam tilted left
+        self.canvas.create_line(40, 105, 210, 125, width=4, fill='brown')
 
 
 class InputPanel(ttk.Frame):
@@ -113,7 +256,7 @@ class InputPanel(ttk.Frame):
 
 
 class ComparisonPanel(ttk.Frame):
-    """Панель парних порівнянь"""
+    """Панель парних порівнянь з динамічним інтерфейсом шкалування"""
 
     def __init__(self, parent, alternatives, on_complete, on_back):
         super().__init__(parent)
@@ -127,17 +270,24 @@ class ComparisonPanel(ttk.Frame):
         self.comparisons = []
         self.pairs = self._generate_pairs()
 
-        # Поточна вибрана шкала та градації
-        self.scale_var = tk.StringVar(value=ScaleType.INTEGER)
-        self.gradations_var = tk.IntVar(value=3)  # Початкова кількість градацій - 3
-        self.selected_section = None
+        # Dynamic scale interface state
+        self.reverse = -1  # -1: not set, 0: Less, 1: More
+        self.res = 1.0     # Result estimate
+        self.rel = 0.0     # Reliability
+        self.scale_str = '0'  # Current scale configuration
+        self.scale_type_id = 1  # 1-5: scale types
+        self.delay_wheel = 0  # Mouse wheel delay
+
+        # UI component references
+        self.scale_panels: List[tk.Button] = []
+        self.panel_less: Optional[tk.Button] = None
+        self.panel_more: Optional[tk.Button] = None
 
         # Поточне відношення (більше/менше)
         self.relation_var = tk.StringVar(value="")  # Початково не вибрано
 
         self._create_widgets()
-        self._update_gradations_label()  # Ініціалізувати стан кнопок градацій
-        self._update_display()
+        self._reset_comparison()
 
     def _generate_pairs(self):
         """Генерувати всі пари для порівняння"""
@@ -148,139 +298,237 @@ class ComparisonPanel(ttk.Frame):
         return pairs
 
     def _create_widgets(self):
-        # Головний контейнер - горизонтальне розділення
+        # Контейнер для всього вмісту
         main_container = ttk.Frame(self)
         main_container.pack(fill='both', expand=True, padx=10, pady=10)
 
-        # ===== ЛІВА ПАНЕЛЬ - Підбір шкали =====
-        left_panel = ttk.LabelFrame(main_container, text="Підбір шкали", width=200)
-        left_panel.pack(side='left', fill='y', padx=(0, 10))
-        left_panel.pack_propagate(False)
-
-        # Radio buttons для вибору шкали
-        scales = get_all_scale_names()
-        for scale_name in scales:
-            rb = ttk.Radiobutton(
-                left_panel,
-                text=scale_name,
-                variable=self.scale_var,
-                value=scale_name,
-                command=self._on_scale_changed
-            )
-            rb.pack(anchor='w', padx=10, pady=5)
-
-        # Кнопки для зміни градацій
-        self.gradations_frame = ttk.Frame(left_panel)
-        self.gradations_frame.pack(anchor='w', padx=10, pady=10, fill='x')
-
-        ttk.Label(self.gradations_frame, text="Градації:").pack(anchor='w', pady=5)
-
-        # Кнопки +/-
-        buttons_frame = ttk.Frame(self.gradations_frame)
-        buttons_frame.pack(anchor='w', pady=5)
-
-        self.minus_btn = ttk.Button(
-            buttons_frame,
-            text="− Прибрати градацію",
-            command=self._decrease_gradations,
-            width=20
-        )
-        self.minus_btn.pack(pady=2, fill='x')
-
-        self.plus_btn = ttk.Button(
-            buttons_frame,
-            text="+ Додати градацію",
-            command=self._increase_gradations,
-            width=20
-        )
-        self.plus_btn.pack(pady=2, fill='x')
-
-        # Лейбл для відображення поточної кількості
-        self.gradations_label = ttk.Label(
-            self.gradations_frame,
-            text=f"Поточно: {self.gradations_var.get()} з 9",
-            font=('Arial', 9)
-        )
-        self.gradations_label.pack(anchor='w', pady=5)
-
-        # ===== ПРАВА ПАНЕЛЬ - Бар та кнопки =====
-        right_panel = ttk.Frame(main_container)
-        right_panel.pack(side='left', fill='both', expand=True)
-
         # Прогрес
-        self.progress_label = ttk.Label(right_panel, text="", font=('Arial', 10))
+        self.progress_label = ttk.Label(
+            main_container,
+            text="",
+            font=('Arial', 12, 'bold')
+        )
         self.progress_label.pack(pady=5)
 
-        # Панель вибору відношення (Більше/Менше)
-        relation_frame = ttk.Frame(right_panel)
-        relation_frame.pack(pady=10)
+        # ===== DYNAMIC SCALE INTERFACE =====
+        # Головна область порівняння
+        comparison_frame = ttk.Frame(main_container)
+        comparison_frame.pack(fill='both', expand=True, pady=10)
 
-        ttk.Label(relation_frame, text="Оберіть тип порівняння:", font=('Arial', 10)).pack(pady=5)
+        # Верхня частина - мітки об'єктів
+        top_frame = tk.Frame(comparison_frame, bg='#f0f0f0')
+        top_frame.pack(fill='x', pady=5)
 
-        # Контейнер для кнопок
-        buttons_container = tk.Frame(relation_frame)
-        buttons_container.pack(pady=5)
+        # Label A (зліва)
+        self.label_a = tk.Label(
+            top_frame,
+            text="Object A",
+            font=('MS Sans Serif', 10),
+            fg='red',
+            bg='#f0f0f0',
+            wraplength=150,
+            justify='left'
+        )
+        self.label_a.pack(side='left', padx=10)
 
-        # Кнопка "Менше"
-        self.less_btn = tk.Button(
-            buttons_container,
-            text="Менше",
-            command=lambda: self._set_relation("менше"),
-            bg='#cccccc',
-            fg='black',
-            font=('Arial', 10),
-            width=12,
-            height=1,
+        # Label "is" та "than"
+        center_frame = tk.Frame(top_frame, bg='#f0f0f0')
+        center_frame.pack(side='left', expand=True)
+
+        self.label_is = tk.Label(
+            center_frame,
+            text='is',
+            font=('MS Sans Serif', 12, 'bold'),
+            fg='red',
+            bg='#f0f0f0'
+        )
+        self.label_is.pack(side='left', padx=5)
+
+        self.label_than = tk.Label(
+            center_frame,
+            text='than',
+            font=('MS Sans Serif', 12, 'bold'),
+            fg='red',
+            bg='#f0f0f0'
+        )
+        self.label_than.pack(side='right', padx=5)
+
+        # Label B (справа)
+        self.label_b = tk.Label(
+            top_frame,
+            text="Object B",
+            font=('MS Sans Serif', 10),
+            fg='red',
+            bg='#f0f0f0',
+            wraplength=150,
+            justify='left'
+        )
+        self.label_b.pack(side='right', padx=10)
+
+        # Середня частина - панель шкали
+        middle_frame = tk.Frame(comparison_frame, bg='#f0f0f0')
+        middle_frame.pack(fill='x', pady=5)
+
+        # Контейнер для динамічних панелей
+        self.panel_scale = tk.Frame(middle_frame, bg='#f0f0f0', relief='flat')
+        self.panel_scale.pack(fill='x', padx=150)
+
+        # Початкові кнопки Less/More
+        self.panel_less = tk.Button(
+            self.panel_scale,
+            text='Less preferred',
             relief='raised',
-            bd=2
+            cursor='hand2',
+            bg='red',
+            fg='white',
+            font=('MS Sans Serif', 9)
         )
-        self.less_btn.pack(side='left', padx=5)
+        self.panel_less.place(x=0, y=0, width=235, height=30)
+        self.panel_less.hint = LESS_MORE[0]
+        self.panel_less.config(command=lambda: self.panel_scale_click(self.panel_less))
 
-        # Кнопка "Більше"
-        self.more_btn = tk.Button(
-            buttons_container,
-            text="Більше",
-            command=lambda: self._set_relation("більше"),
-            bg='#cccccc',
-            fg='black',
-            font=('Arial', 10),
-            width=12,
-            height=1,
+        self.panel_more = tk.Button(
+            self.panel_scale,
+            text='More preferred',
             relief='raised',
-            bd=2
+            cursor='hand2',
+            bg='red',
+            fg='white',
+            font=('MS Sans Serif', 9)
         )
-        self.more_btn.pack(side='left', padx=5)
+        self.panel_more.place(x=235, y=0, width=240, height=30)
+        self.panel_more.hint = LESS_MORE[1]
+        self.panel_more.config(command=lambda: self.panel_scale_click(self.panel_more))
 
-        # Заголовок з назвами альтернатив та "впливає Більше/Менше"
-        header_frame = ttk.Frame(right_panel)
-        header_frame.pack(fill='x', pady=10)
-
-        self.obj_a_label = ttk.Label(header_frame, text="Object A", font=('Arial', 11))
-        self.obj_a_label.pack(side='left')
-
-        self.center_label = ttk.Label(header_frame, text="впливає", font=('Arial', 11, 'bold'))
-        self.center_label.pack(side='left', expand=True)
-
-        self.obj_b_label = ttk.Label(header_frame, text="Object B", font=('Arial', 11))
-        self.obj_b_label.pack(side='right')
-
-        # Canvas для горизонтального бара
-        self.bar_canvas = tk.Canvas(right_panel, height=80, bg='white')
-        self.bar_canvas.pack(fill='x', pady=10)
-        self.bar_canvas.bind('<Configure>', self._on_canvas_resize)
-        self.bar_canvas.bind('<Button-1>', self._on_bar_click)
-
-        # Кнопка "Підтверджую"
-        confirm_btn = ttk.Button(
-            right_panel,
-            text="Підтверджую",
-            command=self._confirm_comparison,
-            style='Accent.TButton'
+        # Візуалізація шкали
+        self.image_show = tk.Canvas(
+            middle_frame,
+            bg='white',
+            highlightthickness=1,
+            highlightbackground='gray'
         )
-        confirm_btn.pack(pady=20)
+        self.image_show.pack(fill='both', expand=True, padx=150, pady=5)
+        self.image_show.configure(height=120)
 
-        # Кнопки навігації внизу
-        nav_frame = ttk.Frame(right_panel)
+        # ===== БОКОВА ПАНЕЛЬ З НАЛАШТУВАННЯМИ =====
+        side_frame = ttk.LabelFrame(comparison_frame, text="Налаштування шкали")
+        side_frame.pack(side='left', fill='y', padx=10)
+
+        # Scale type choice panel
+        self.panel_scale_choice = tk.Frame(side_frame, relief='raised', bd=2)
+        self.panel_scale_choice.pack(padx=5, pady=5, fill='both')
+
+        # Button and spin
+        button_spin_frame = tk.Frame(self.panel_scale_choice)
+        button_spin_frame.pack(fill='x')
+
+        self.panel_scale_button_choice = tk.Button(
+            button_spin_frame,
+            text='Scale Type',
+            relief='sunken',
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.toggle_scale_choice
+        )
+        self.panel_scale_button_choice.pack(side='left', fill='x', expand=True)
+
+        # Spin buttons
+        spin_frame = tk.Frame(button_spin_frame)
+        spin_frame.pack(side='right')
+
+        self.spin_up = tk.Button(
+            spin_frame,
+            text='▲',
+            command=self.spin_up_click,
+            width=2
+        )
+        self.spin_up.pack(side='top')
+
+        self.spin_down = tk.Button(
+            spin_frame,
+            text='▼',
+            command=self.spin_down_click,
+            width=2
+        )
+        self.spin_down.pack(side='bottom')
+
+        # Radio buttons for scale types
+        self.scale_type_var = tk.IntVar(value=1)
+
+        self.rbut_integer = tk.Radiobutton(
+            self.panel_scale_choice,
+            text='Integer',
+            variable=self.scale_type_var,
+            value=1,
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.scale_choice_changed
+        )
+        self.rbut_integer.pack(anchor='w', padx=5, pady=2)
+        self.rbut_integer.data = -1
+
+        self.rbut_balanced = tk.Radiobutton(
+            self.panel_scale_choice,
+            text='Balanced',
+            variable=self.scale_type_var,
+            value=2,
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.scale_choice_changed
+        )
+        self.rbut_balanced.pack(anchor='w', padx=5, pady=2)
+        self.rbut_balanced.data = -2
+
+        self.rbut_power = tk.Radiobutton(
+            self.panel_scale_choice,
+            text='Power',
+            variable=self.scale_type_var,
+            value=3,
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.scale_choice_changed
+        )
+        self.rbut_power.pack(anchor='w', padx=5, pady=2)
+        self.rbut_power.data = -3
+
+        self.rbut_mazheng = tk.Radiobutton(
+            self.panel_scale_choice,
+            text='Ma-Zheng (9/9-9/1)',
+            variable=self.scale_type_var,
+            value=4,
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.scale_choice_changed
+        )
+        self.rbut_mazheng.pack(anchor='w', padx=5, pady=2)
+        self.rbut_mazheng.data = -4
+
+        self.rbut_dodd = tk.Radiobutton(
+            self.panel_scale_choice,
+            text='Donegan-Dodd-McMasters',
+            variable=self.scale_type_var,
+            value=5,
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.scale_choice_changed
+        )
+        self.rbut_dodd.pack(anchor='w', padx=5, pady=2)
+        self.rbut_dodd.data = -5
+
+        # No idea button
+        self.panel_no_idea = tk.Button(
+            side_frame,
+            text='No idea',
+            relief='raised',
+            cursor='hand2',
+            font=('MS Sans Serif', 9),
+            command=self.no_idea_click
+        )
+        self.panel_no_idea.pack(padx=5, pady=10, fill='x')
+        self.panel_no_idea.hint = LESS_MORE[2]
+
+        # ===== NAVIGATION BUTTONS =====
+        nav_frame = ttk.Frame(main_container)
         nav_frame.pack(pady=10)
 
         back_btn = ttk.Button(
@@ -297,152 +545,49 @@ class ComparisonPanel(ttk.Frame):
         )
         return_btn.pack(side='left', padx=5)
 
-    def _set_relation(self, relation):
-        """Встановити вибране відношення (більше/менше)"""
-        self.relation_var.set(relation)
-        self._update_relation_display()
+        # Create graphic hint window
+        self.hint_window = GraphicHintWindow(self.winfo_toplevel())
 
-    def _update_relation_display(self):
-        """Оновити відображення в залежності від вибраного відношення"""
-        relation = self.relation_var.get()
+        # Bind hint events
+        for widget in [self.panel_less, self.panel_more, self.panel_no_idea,
+                      self.rbut_integer, self.rbut_balanced, self.rbut_power,
+                      self.rbut_mazheng, self.rbut_dodd]:
+            widget.bind('<Enter>', self.show_hint_event)
+            widget.bind('<Leave>', lambda e: self.hint_window.hide_hint())
 
-        if not relation:
-            # Якщо відношення не вибрано
-            self.center_label.config(text="впливає")
-            # Обидві кнопки в неактивному стані
-            self.less_btn.config(relief='raised', bg='#cccccc')
-            self.more_btn.config(relief='raised', bg='#cccccc')
-        elif relation == "більше":
-            self.center_label.config(text="впливає Більше")
-            # Підсвітити кнопку "Більше"
-            self.less_btn.config(relief='raised', bg='#cccccc')
-            self.more_btn.config(relief='sunken', bg='#999999')
-        elif relation == "менше":
-            self.center_label.config(text="впливає Менше")
-            # Підсвітити кнопку "Менше"
-            self.less_btn.config(relief='sunken', bg='#999999')
-            self.more_btn.config(relief='raised', bg='#cccccc')
+        # Bind mouse wheel
+        self.bind_all('<MouseWheel>', self.mouse_wheel)
+        self.bind_all('<Button-4>', lambda e: self.spin_up_click())
+        self.bind_all('<Button-5>', lambda e: self.spin_down_click())
 
-    def _on_scale_changed(self, event=None):
-        """Обробник зміни шкали"""
-        # Скинути градації до 3
-        self.gradations_var.set(3)
+    def _reset_comparison(self):
+        """Reset state for new comparison"""
+        self.reverse = -1
+        self.res = 1.0
+        self.rel = 0.0
+        self.scale_str = '0'
+        self.scale_type_id = 1
 
-        # Скинути вибір секції
-        self.selected_section = None
+        self.panel_no_idea.config(text=PREF[1])
+        self.panel_no_idea.hint = PREF[1]
+        self.panel_less.config(text=LESS_MORE[0])
+        self.panel_more.config(text=LESS_MORE[1])
+        self.panel_scale_choice.pack_forget()
 
-        # Оновити лейбл градацій
-        self._update_gradations_label()
+        # Clear dynamic panels
+        for panel in self.scale_panels:
+            panel.destroy()
+        self.scale_panels.clear()
 
-        # Перемалювати бар
-        self._draw_bar()
+        # Reset button positions
+        self.panel_less.place(x=0, y=0, width=235, height=30)
+        self.panel_more.place(x=235, y=0, width=240, height=30)
 
-    def _increase_gradations(self):
-        """Збільшити кількість градацій на 1"""
-        current = self.gradations_var.get()
-        if current < 9:
-            self.gradations_var.set(current + 1)
-            self._update_gradations_label()
-            self.selected_section = None
-            self._draw_bar()
-
-    def _decrease_gradations(self):
-        """Зменшити кількість градацій на 1"""
-        current = self.gradations_var.get()
-        if current > 3:
-            self.gradations_var.set(current - 1)
-            self._update_gradations_label()
-            self.selected_section = None
-            self._draw_bar()
-
-    def _update_gradations_label(self):
-        """Оновити лейбл з поточною кількістю градацій"""
-        current = self.gradations_var.get()
-        self.gradations_label.config(text=f"Поточно: {current} з 9")
-
-        # Оновити стан кнопок
-        if current <= 3:
-            self.minus_btn.config(state='disabled')
-        else:
-            self.minus_btn.config(state='normal')
-
-        if current >= 9:
-            self.plus_btn.config(state='disabled')
-        else:
-            self.plus_btn.config(state='normal')
-
-    def _on_canvas_resize(self, event=None):
-        """Обробник зміни розміру canvas"""
-        self._draw_bar()
-
-    def _on_bar_click(self, event):
-        """Обробник кліку по бару"""
-        # Визначити на яку секцію клікнули
-        gradations = self.gradations_var.get()
-
-        canvas_width = self.bar_canvas.winfo_width()
-        section_width = canvas_width / gradations
-
-        section_index = int(event.x / section_width)
-        if 0 <= section_index < gradations:
-            self.selected_section = section_index
-            self._draw_bar()
-
-    def _draw_bar(self):
-        """Намалювати горизонтальний бар з секціями"""
-        # Очистити canvas
-        self.bar_canvas.delete('all')
-
-        scale_name = self.scale_var.get()
-        gradations = self.gradations_var.get()
-
-        scale = get_scale(scale_name, gradations)
-
-        canvas_width = self.bar_canvas.winfo_width()
-        canvas_height = self.bar_canvas.winfo_height()
-
-        if canvas_width < 10:  # canvas ще не ініціалізовано
-            return
-
-        bar_height = 40
-        bar_y = 30
-        section_width = canvas_width / gradations
-
-        # Намалювати секції
-        for i in range(gradations):
-            x1 = i * section_width
-            x2 = (i + 1) * section_width
-
-            # Колір секції - червоний, але темніший для вибраної
-            if self.selected_section == i:
-                fill_color = '#cc0000'
-            else:
-                fill_color = '#ff4444'
-
-            # Намалювати прямокутник секції
-            self.bar_canvas.create_rectangle(
-                x1, bar_y, x2, bar_y + bar_height,
-                fill=fill_color,
-                outline='#880000',
-                width=2
-            )
-
-            # Підпис секції
-            if hasattr(scale, 'labels') and i < len(scale.labels):
-                label = scale.labels[i]
-                # Розмістити текст над секцією
-                text_x = x1 + section_width / 2
-                self.bar_canvas.create_text(
-                    text_x, bar_y - 10,
-                    text=label,
-                    font=('Arial', 8),
-                    anchor='s'
-                )
+        self._update_display()
 
     def _update_display(self):
         """Оновити відображення поточної пари"""
         if self.current_pair >= len(self.pairs):
-            self._finish_comparisons()
             return
 
         i, j = self.pairs[self.current_pair]
@@ -453,56 +598,404 @@ class ComparisonPanel(ttk.Frame):
         )
 
         # Оновити назви альтернатив
-        self.obj_a_label.config(text=self.alternatives[i])
-        self.obj_b_label.config(text=self.alternatives[j])
+        self.label_a.config(text=self.alternatives[i])
+        self.label_b.config(text=self.alternatives[j])
 
-        # Оновити відображення відношення
-        self._update_relation_display()
+        # Clear visualization
+        self.image_show.delete('all')
 
-        # Скинути вибір
-        self.selected_section = None
+    # ===== DYNAMIC SCALE INTERFACE METHODS =====
 
-        # Перемалювати бар
-        self._draw_bar()
+    def integer_by_scale(self, data: float) -> float:
+        """Apply scale transformation"""
+        result = data
+        scale_type = self.scale_type_var.get()
+
+        if scale_type == 2:  # Balanced
+            result = (0.5 + (data - 1) * 0.05) / (0.5 - (data - 1) * 0.05)
+        elif scale_type == 3:  # Power
+            result = math.pow(9, (data - 1) / 8)
+        elif scale_type == 4:  # Ma-Zheng
+            result = 9 / (9 + 1 - data)
+        elif scale_type == 5:  # Dodd
+            result = math.exp(math.atanh((data - 1) / 14 * math.sqrt(3)))
+
+        return result
+
+    def in_range(self, value: int, min_val: int, max_val: int) -> bool:
+        """Helper function equivalent to Delphi's InRange"""
+        return min_val <= value <= max_val
+
+    def build_scale(self, scale_str: str):
+        """Build dynamic scale panels (faithful Delphi recreation)"""
+        # Clear existing dynamic panels
+        for panel in self.scale_panels:
+            panel.destroy()
+        self.scale_panels.clear()
+
+        if self.reverse == -1:
+            # Initial state - just show Less/More
+            return
+
+        # Calculate number of panels needed
+        li = len(scale_str)
+
+        # Calculate sum of weights
+        if scale_str in ['23459', '25679', '2589']:
+            ii = 8
+        else:
+            ii = li
+
+        sum_w = 0.0
+        for i in range(1, ii + 1):
+            sum_w += self.integer_by_scale(1.5 + (i - 0.5) * (9.5 - 1.5) / ii)
+
+        # Build panels
+        wi = 0  # Width accumulator
+        panel_scale_width = 475
+
+        for i in range(li, -1, -1):  # Reverse order
+            # Create new panel
+            new_pin = tk.Button(
+                self.panel_scale,
+                text='',
+                relief='raised',
+                cursor='hand2',
+                font=('MS Sans Serif', 8)
+            )
+
+            if i == li:
+                # Last panel - Less/More indicator
+                width = panel_scale_width // 9
+                wi = width
+                caption = LESS_MORE[1 - self.reverse]
+                new_pin.config(text=caption, bg='#f0f0f0', fg='black')
+                new_pin.hint = caption
+
+                if self.reverse == 1:  # More
+                    left = 0
+                else:  # Less
+                    left = panel_scale_width - width
+            else:
+                # Regular gradation panel
+                idx = li - i - 1
+                grade_char = scale_str[idx]
+                grade = int(grade_char)
+
+                # Calculate width based on complex algorithm
+                if scale_str in ['23459', '25679', '2589']:
+                    # Special handling for these scales
+                    if self.scale_type_var.get() == 1:  # Integer
+                        width = panel_scale_width * 16 // 9 // 6
+
+                    pos = scale_str.index(grade_char) + 1  # 1-based position
+
+                    # Check if grouped panel
+                    is_grouped = False
+                    if scale_str == '23459' and pos > 3:
+                        is_grouped = True
+                    elif scale_str == '25679' and not self.in_range(pos, 2, 4):
+                        is_grouped = True
+                    elif scale_str == '2589' and pos < 3:
+                        is_grouped = True
+
+                    if is_grouped and self.scale_type_var.get() != 1:
+                        # Grouped panels
+                        if (scale_str in ['25679', '2589']) and grade_char == '2':
+                            width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
+                                        (self.integer_by_scale(2) + self.integer_by_scale(3) +
+                                         self.integer_by_scale(4)))
+                        elif (scale_str in ['23459', '2589']) and grade_char == '5':
+                            width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
+                                        (self.integer_by_scale(5) + self.integer_by_scale(6) +
+                                         self.integer_by_scale(7)))
+                        elif (scale_str in ['23459', '25679']) and grade_char == '9':
+                            width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
+                                        (self.integer_by_scale(8) + self.integer_by_scale(9)))
+                        new_pin.config(bg='#f0f0f0', fg='black')
+                    else:
+                        # Active panels
+                        if self.scale_type_var.get() == 1:  # Integer
+                            width = width // (len(scale_str) - 2)
+                        else:
+                            width = round(panel_scale_width * 16 / 9 / 2 / sum_w *
+                                        self.integer_by_scale(grade))
+                        new_pin.config(bg='red', fg='white')
+                else:
+                    # Regular scale
+                    if self.scale_type_var.get() == 1:  # Integer
+                        width = panel_scale_width / 2 * 16 / 9 / li
+                        width = int(width)
+                    else:
+                        width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
+                                    self.integer_by_scale(1.5 + (li - i - 0.5) * (9.5 - 1.5) / li))
+                    new_pin.config(bg='red', fg='white')
+
+                wi += width
+                left = panel_scale_width * (1 - self.reverse) - wi + 2 * wi * self.reverse - width * self.reverse
+                new_pin.hint = PREF[grade]
+
+            # Position panel
+            new_pin.place(x=int(left), y=0, width=int(width), height=30)
+
+            # Bind events
+            new_pin.config(command=lambda p=new_pin: self.panel_scale_click(p))
+            new_pin.bind('<Enter>', self.show_hint_event)
+            new_pin.bind('<Leave>', lambda e: self.hint_window.hide_hint())
+
+            if i < li:
+                self.scale_panels.append(new_pin)
+
+        # Update visualization
+        self.show_image()
+
+    def show_image(self):
+        """Draw visual scale representation"""
+        self.image_show.delete('all')
+
+        if self.reverse == -1:
+            return
+
+        # Find min/max positions
+        min_l = 475
+        max_r = 0
+
+        for panel in self.scale_panels:
+            if panel.winfo_exists() and panel.winfo_ismapped():
+                x = panel.winfo_x()
+                width = panel.winfo_width()
+                hint = panel.hint
+
+                # Draw vertical tick
+                self.image_show.create_line(x, 0, x, 10, fill='black')
+
+                # Draw vertical text
+                center_x = x + width // 2
+                self.image_show.create_text(
+                    center_x - 5, 50,
+                    text=hint, angle=90, anchor='w',
+                    font=('Arial', 8)
+                )
+
+                min_l = min(min_l, x)
+                max_r = max(max_r, x + width)
+
+        # Draw final tick and horizontal line
+        if max_r > 0:
+            self.image_show.create_line(max_r - 1, 0, max_r - 1, 10, fill='black')
+            self.image_show.create_line(min_l, 0, max_r - 1, 0, fill='black')
+
+    def panel_scale_click(self, panel):
+        """Handle scale panel click (progressive refinement logic)"""
+        hint = panel.hint
+
+        # Handle Less/More selection
+        if hint in [LESS_MORE[0], LESS_MORE[1]]:
+            self.panel_no_idea.config(text=PREF[1])
+            self.panel_no_idea.hint = PREF[1]
+
+            if hint == LESS_MORE[0]:
+                self.reverse = 0  # Less
+            else:
+                self.reverse = 1  # More
+
+        # Progressive refinement logic
+        if self.scale_str == '0':
+            # First level - coarse scale
+            self.rel = 1.0  # Chose Less/More
+            self.res = 5.5  # Middle value
+            self.scale_str = '259'
+        elif self.scale_str == '259' and panel.cget('bg') == 'red':
+            # Second level - medium scale
+            grad = 1
+            for idx, char in enumerate(self.scale_str, 1):
+                if hint == PREF[int(char)]:
+                    grad = idx
+                    break
+
+            if grad == 1:
+                self.scale_str = '23459'
+            elif grad == 2:
+                self.scale_str = '25679'
+            elif grad == 3:
+                self.scale_str = '2589'
+
+            self.rel = 3.0  # Chose from 3 options
+            self.res = 1.5 + (grad - 0.5) * (9.5 - 1.5) / 3
+        elif panel.cget('bg') == '#f0f0f0':
+            # Click on grouped panel
+            if hint == PREF[2]:
+                self.scale_str = '23459'
+                self.res = 1.5 + (1 - 0.5) * (9.5 - 1.5) / 3
+            elif hint == PREF[5]:
+                self.scale_str = '25679'
+                self.res = 1.5 + (2 - 0.5) * (9.5 - 1.5) / 3
+            elif hint == PREF[9]:
+                self.scale_str = '2589'
+                self.res = 1.5 + (3 - 0.5) * (9.5 - 1.5) / 3
+        else:
+            # Final selection
+            grad = 1
+            for idx, char in enumerate(self.scale_str, 1):
+                if hint == PREF[int(char)]:
+                    grad = idx
+                    break
+
+            if self.scale_str in ['23459', '25679', '2589']:
+                # Adjust for offset
+                if self.scale_str == '25679':
+                    grad += 2
+                elif self.scale_str == '2589':
+                    grad += 4
+                self.rel = 8.0
+            else:
+                self.rel = len(self.scale_str)
+
+            self.res = 1.5 + (grad - 0.5) * (9.5 - 1.5) / self.rel
+            self._confirm_comparison()
+            return
+
+        # Rebuild scale and update
+        self.build_scale(self.scale_str)
+        self.panel_scale_choice.pack(padx=5, pady=5, fill='both')
+
+        st = LESS_MORE[self.reverse]
+        self.label_is.config(text=f'is {st}')
+
+    def show_hint_event(self, event):
+        """Show graphical hint"""
+        widget = event.widget
+
+        # Get hint text
+        if hasattr(widget, 'hint'):
+            hint_text = widget.hint
+        else:
+            return
+
+        # Calculate data for visualization
+        data = 0.0
+
+        if isinstance(widget, tk.Radiobutton):
+            # Scale type hint
+            data = widget.data
+        elif hasattr(widget, 'hint'):
+            if self.panel_scale_choice.winfo_ismapped():
+                # Panel hint when scale is visible
+                if widget.hint in [PREF[1], LESS_MORE[0], LESS_MORE[1]]:
+                    data = self.res
+                else:
+                    # Find grade
+                    data = 1.0
+                    for i in range(1, 10):
+                        if widget.hint == PREF[i]:
+                            data = float(i)
+                            break
+
+                    # Apply transformation
+                    data = self.integer_by_scale(data)
+
+                    # Invert if Less
+                    if ((self.reverse == 0 and widget.hint != LESS_MORE[1]) or
+                        (self.reverse != 0 and widget.hint == LESS_MORE[0])):
+                        if data != 0:
+                            data = 1 / data
+            else:
+                # Initial state hints
+                if widget.hint == LESS_MORE[0]:
+                    data = 1 / 5.5
+                elif widget.hint == LESS_MORE[1]:
+                    data = 5.5
+                else:
+                    data = 1.0
+
+        # Show hint window
+        if data != 0:
+            x = self.winfo_toplevel().winfo_pointerx()
+            y = self.winfo_toplevel().winfo_pointery()
+            self.hint_window.show_hint(x, y, hint_text, data)
+
+    def toggle_scale_choice(self):
+        """Toggle scale type panel visibility"""
+        if self.panel_scale_button_choice.cget('relief') == 'sunken':
+            self.panel_scale_button_choice.config(relief='raised')
+            # Disable radio buttons
+            for rb in [self.rbut_integer, self.rbut_balanced, self.rbut_power,
+                      self.rbut_mazheng, self.rbut_dodd]:
+                rb.config(state='disabled')
+        else:
+            self.panel_scale_button_choice.config(relief='sunken')
+            # Enable radio buttons
+            for rb in [self.rbut_integer, self.rbut_balanced, self.rbut_power,
+                      self.rbut_mazheng, self.rbut_dodd]:
+                rb.config(state='normal')
+
+    def scale_choice_changed(self):
+        """Handle scale type change"""
+        self.build_scale(self.scale_str)
+
+    def spin_up_click(self):
+        """Increase gradations"""
+        if self.reverse > -1 and len(self.scale_str) < 8:
+            self.scale_str = GRADUAL_SCALE[len(self.scale_str) + 1]
+            self.rel = 1.0
+            self.res = 5.5
+            self.build_scale(self.scale_str)
+
+    def spin_down_click(self):
+        """Decrease gradations"""
+        if self.reverse > -1 and len(self.scale_str) > 2:
+            self.scale_str = GRADUAL_SCALE[len(self.scale_str) - 1]
+            self.rel = 1.0
+            self.res = 5.5
+            self.build_scale(self.scale_str)
+
+    def mouse_wheel(self, event):
+        """Handle mouse wheel"""
+        if self.delay_wheel < 3:
+            self.delay_wheel += 1
+            return
+        self.delay_wheel = 0
+
+        if event.delta > 0:
+            self.spin_up_click()
+        else:
+            self.spin_down_click()
+
+    def no_idea_click(self):
+        """Handle 'No idea' click"""
+        # Set result to 1 (equal) with zero reliability
+        self.res = 1.0
+        self.rel = 0.0
+        self.reverse = -1
+        self._confirm_comparison()
 
     def _confirm_comparison(self):
-        """Підтвердити поточне порівняння"""
-        # Перевірити чи вибрано відношення
-        if not self.relation_var.get():
-            messagebox.showwarning(
-                "Попередження",
-                "Будь ласка, оберіть тип порівняння (Більше або Менше)"
-            )
-            return
-
-        # Перевірити чи вибрано секцію
-        if self.selected_section is None:
-            messagebox.showwarning(
-                "Попередження",
-                "Будь ласка, виберіть рівень впливу, клікнувши на секції бара"
-            )
-            return
-
+        """Confirm current comparison and move to next"""
         i, j = self.pairs[self.current_pair]
 
-        scale_name = self.scale_var.get()
-        gradations = self.gradations_var.get()
+        # Apply transformation and reverse
+        if self.reverse > -1:
+            final_res = self.integer_by_scale(self.res)
 
-        scale = get_scale(scale_name, gradations)
+            if self.reverse == 0:  # Less
+                if final_res != 0:
+                    final_res = 1 / final_res
+        else:
+            final_res = 1.0
 
-        # Отримати уніфіковане значення
-        unified_value = scale.unify(self.selected_section)
+        # Save scale type
+        self.scale_type_id = self.scale_type_var.get()
 
-        # Якщо вибрано "менше", інвертувати значення
-        if self.relation_var.get() == "менше":
-            unified_value = 1.0 / unified_value
+        # Store comparison
+        self.comparisons.append((i, j, final_res))
 
-        # Зберегти порівняння
-        self.comparisons.append((i, j, unified_value))
-
-        # Наступна пара
+        # Move to next pair
         self.current_pair += 1
-        self._update_display()
+
+        if self.current_pair >= len(self.pairs):
+            self._finish_comparisons()
+        else:
+            self._reset_comparison()
 
     def _go_back(self):
         """Повернутися до попередньої пари"""
@@ -510,10 +1003,11 @@ class ComparisonPanel(ttk.Frame):
             self.current_pair -= 1
             if self.comparisons:
                 self.comparisons.pop()
-            self._update_display()
+            self._reset_comparison()
 
     def _finish_comparisons(self):
         """Завершити порівняння"""
+        self.hint_window.destroy()
         self.on_complete(self.comparisons)
 
 
@@ -645,7 +1139,7 @@ class ResultsPanel(ttk.Frame):
         # Кнопка почати заново
         restart_btn = ttk.Button(
             self,
-            text="🔄 Почати заново",
+            text="Почати заново",
             command=self.on_restart
         )
         restart_btn.pack(pady=20)
@@ -657,8 +1151,8 @@ class MainApplication(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Експертне оцінювання - Метод парних порівнянь")
-        self.geometry("800x700")
+        self.title("Експертне оцінювання - Динамічний інтерфейс шкалування")
+        self.geometry("900x750")
 
         # Стиль
         self.style = ttk.Style()
