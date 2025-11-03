@@ -370,24 +370,6 @@ class ComparisonPanel(ttk.Frame):
                     anchor='s'
                 )
 
-        # Додати підписи "Менше" та "Сильно / Абсолютно"
-        # Ліворуч внизу
-        # self.bar_canvas.create_text(
-        #     5, bar_y + bar_height + 15,
-        #     text="Менше",
-        #     font=('Arial', 9),
-        #     anchor='w'
-        # )
-
-        # Праворуч внизу
-        # last_label = "Абсолютно" if gradations == 9 else "Сильно"
-        # self.bar_canvas.create_text(
-        #     canvas_width - 5, bar_y + bar_height + 15,
-        #     text=last_label,
-        #     font=('Arial', 9),
-        #     anchor='e'
-        # )
-
     def _update_display(self):
         """Оновити відображення поточної пари"""
         if self.current_pair >= len(self.pairs):

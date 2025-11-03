@@ -22,14 +22,19 @@ def test_scales():
     print(f"\nДоступно шкал: {len(scale_names)}")
 
     for scale_name in scale_names:
-        scale = get_scale(scale_name)
-        print(f"\n{scale.name}:")
-        print(f"  Градацій: {scale.gradations}")
-        print(f"  Значення: {[f'{v:.2f}' for v in scale.values]}")
+        # Тестуємо з 3 та 9 градаціями
+        for gradations in [3, 9]:
+            scale = get_scale(scale_name, gradations)
+            print(f"\n{scale.name} ({gradations} градацій):")
+            print(f"  Значення: {[f'{v:.2f}' for v in scale.values]}")
 
-        # Перевірка уніфікації
-        unified = [scale.unify(i) for i in range(scale.gradations)]
-        print(f"  Уніфіковані: {[f'{v:.2f}' for v in unified]}")
+            # Перевірка уніфікації
+            unified = [scale.unify(i) for i in range(scale.gradations)]
+            print(f"  Уніфіковані: {[f'{v:.2f}' for v in unified]}")
+
+            # Показати підписи
+            if hasattr(scale, 'labels'):
+                print(f"  Підписи: {scale.labels}")
 
 
 def test_calculations():
@@ -103,15 +108,16 @@ def test_unification():
 
     # Порівняти уніфікацію для різних шкал
     test_cases = [
-        (ScaleType.INTEGER, 4),      # 5-та градація цілочислової шкали
-        (ScaleType.BALANCED_9, 4),   # 5-та градація збалансованої (9)
-        (ScaleType.POWER_9, 4),      # 5-та градація степеневої (9)
-        (ScaleType.MA_ZHENG, 4),     # 5-та градація Ма-Чженга
+        (ScaleType.INTEGER, 9, 4),      # 5-та градація цілочислової шкали (9 градацій)
+        (ScaleType.BALANCED, 9, 4),     # 5-та градація збалансованої (9 градацій)
+        (ScaleType.POWER, 9, 4),        # 5-та градація степеневої (9 градацій)
+        (ScaleType.MA_ZHENG, 9, 4),     # 5-та градація Ма-Чженга (9 градацій)
+        (ScaleType.DONEGAN, 9, 4),      # 5-та градація Донеган (9 градацій)
     ]
 
-    print("\nПорівняння уніфікації 5-ї градації різних шкал:")
-    for scale_name, gradation_idx in test_cases:
-        scale = get_scale(scale_name)
+    print("\nПорівняння уніфікації 5-ї градації різних шкал (9 градацій):")
+    for scale_name, gradations, gradation_idx in test_cases:
+        scale = get_scale(scale_name, gradations)
         original_value = scale.get_value(gradation_idx)
         unified_value = scale.unify(gradation_idx)
         print(f"\n  {scale.name}:")
