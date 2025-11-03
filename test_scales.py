@@ -5,7 +5,7 @@
 from gui.scales import (
     get_scale, get_all_scale_names, ScaleType,
     IntegerScale, BalancedScale, PowerScale,
-    MaZhengScale, DoneganScale, OrdinalScale
+    MaZhengScale, DoneganScale
 )
 
 
@@ -43,7 +43,6 @@ def main():
     test_scale(ScaleType.POWER, 3)
     test_scale(ScaleType.MA_ZHENG)
     test_scale(ScaleType.DONEGAN)
-    test_scale(ScaleType.ORDINAL)
 
     print("\n\nСписок всіх доступних шкал:")
     for scale_name in get_all_scale_names():
