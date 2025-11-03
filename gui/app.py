@@ -264,10 +264,6 @@ class ComparisonPanel(ttk.Frame):
         self.obj_b_label = ttk.Label(header_frame, text="Object B", font=('Arial', 11))
         self.obj_b_label.pack(side='right')
 
-        # Контекстний підпис
-        self.context_label = ttk.Label(right_panel, text="", font=('Arial', 9, 'italic'))
-        self.context_label.pack(pady=2)
-
         # Canvas для горизонтального бара
         self.bar_canvas = tk.Canvas(right_panel, height=80, bg='white')
         self.bar_canvas.pack(fill='x', pady=10)
@@ -313,29 +309,16 @@ class ComparisonPanel(ttk.Frame):
         if not relation:
             # Якщо відношення не вибрано
             self.center_label.config(text="впливає")
-            self.context_label.config(text="")
             # Обидві кнопки в неактивному стані
             self.less_btn.config(relief='raised', bg='#cccccc')
             self.more_btn.config(relief='raised', bg='#cccccc')
         elif relation == "більше":
             self.center_label.config(text="впливає Більше")
-            # Оновити контекстний підпис з назвами альтернатив
-            if self.current_pair < len(self.pairs):
-                i, j = self.pairs[self.current_pair]
-                self.context_label.config(
-                    text=f"{self.alternatives[i]} впливає більше за {self.alternatives[j]}"
-                )
             # Підсвітити кнопку "Більше"
             self.less_btn.config(relief='raised', bg='#cccccc')
             self.more_btn.config(relief='sunken', bg='#999999')
         elif relation == "менше":
             self.center_label.config(text="впливає Менше")
-            # Оновити контекстний підпис з назвами альтернатив
-            if self.current_pair < len(self.pairs):
-                i, j = self.pairs[self.current_pair]
-                self.context_label.config(
-                    text=f"{self.alternatives[i]} впливає менше за {self.alternatives[j]}"
-                )
             # Підсвітити кнопку "Менше"
             self.less_btn.config(relief='sunken', bg='#999999')
             self.more_btn.config(relief='raised', bg='#cccccc')
