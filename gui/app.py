@@ -283,6 +283,9 @@ class ComparisonPanel(ttk.Frame):
         self.panel_less: Optional[tk.Button] = None
         self.panel_more: Optional[tk.Button] = None
 
+        # Поточне відношення (більше/менше)
+        self.relation_var = tk.StringVar(value="")  # Початково не вибрано
+
         self._create_widgets()
         self._reset_comparison()
 
