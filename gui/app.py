@@ -132,6 +132,9 @@ class ComparisonPanel(ttk.Frame):
         self.gradations_var = tk.IntVar(value=3)  # Початкова кількість градацій - 3
         self.selected_section = None
 
+        # Поточне відношення (більше/менше)
+        self.relation_var = tk.StringVar(value="")  # Початково не вибрано
+
         self._create_widgets()
         self._update_gradations_label()  # Ініціалізувати стан кнопок градацій
         self._update_display()
@@ -208,18 +211,62 @@ class ComparisonPanel(ttk.Frame):
         self.progress_label = ttk.Label(right_panel, text="", font=('Arial', 10))
         self.progress_label.pack(pady=5)
 
-        # Заголовок з назвами альтернатив та "впливає Більше"
+        # Панель вибору відношення (Більше/Менше)
+        relation_frame = ttk.Frame(right_panel)
+        relation_frame.pack(pady=10)
+
+        ttk.Label(relation_frame, text="Оберіть тип порівняння:", font=('Arial', 10)).pack(pady=5)
+
+        # Контейнер для кнопок
+        buttons_container = tk.Frame(relation_frame)
+        buttons_container.pack(pady=5)
+
+        # Кнопка "Менше"
+        self.less_btn = tk.Button(
+            buttons_container,
+            text="Менше",
+            command=lambda: self._set_relation("менше"),
+            bg='#cccccc',
+            fg='black',
+            font=('Arial', 10),
+            width=12,
+            height=1,
+            relief='raised',
+            bd=2
+        )
+        self.less_btn.pack(side='left', padx=5)
+
+        # Кнопка "Більше"
+        self.more_btn = tk.Button(
+            buttons_container,
+            text="Більше",
+            command=lambda: self._set_relation("більше"),
+            bg='#cccccc',
+            fg='black',
+            font=('Arial', 10),
+            width=12,
+            height=1,
+            relief='raised',
+            bd=2
+        )
+        self.more_btn.pack(side='left', padx=5)
+
+        # Заголовок з назвами альтернатив та "впливає Більше/Менше"
         header_frame = ttk.Frame(right_panel)
         header_frame.pack(fill='x', pady=10)
 
         self.obj_a_label = ttk.Label(header_frame, text="Object A", font=('Arial', 11))
         self.obj_a_label.pack(side='left')
 
-        center_label = ttk.Label(header_frame, text="впливає Більше", font=('Arial', 11, 'bold'))
-        center_label.pack(side='left', expand=True)
+        self.center_label = ttk.Label(header_frame, text="впливає", font=('Arial', 11, 'bold'))
+        self.center_label.pack(side='left', expand=True)
 
         self.obj_b_label = ttk.Label(header_frame, text="Object B", font=('Arial', 11))
         self.obj_b_label.pack(side='right')
+
+        # Контекстний підпис
+        self.context_label = ttk.Label(right_panel, text="", font=('Arial', 9, 'italic'))
+        self.context_label.pack(pady=2)
 
         # Canvas для горизонтального бара
         self.bar_canvas = tk.Canvas(right_panel, height=80, bg='white')
@@ -253,6 +300,45 @@ class ComparisonPanel(ttk.Frame):
             command=self.on_back
         )
         return_btn.pack(side='left', padx=5)
+
+    def _set_relation(self, relation):
+        """Встановити вибране відношення (більше/менше)"""
+        self.relation_var.set(relation)
+        self._update_relation_display()
+
+    def _update_relation_display(self):
+        """Оновити відображення в залежності від вибраного відношення"""
+        relation = self.relation_var.get()
+
+        if not relation:
+            # Якщо відношення не вибрано
+            self.center_label.config(text="впливає")
+            self.context_label.config(text="")
+            # Обидві кнопки в неактивному стані
+            self.less_btn.config(relief='raised', bg='#cccccc')
+            self.more_btn.config(relief='raised', bg='#cccccc')
+        elif relation == "більше":
+            self.center_label.config(text="впливає Більше")
+            # Оновити контекстний підпис з назвами альтернатив
+            if self.current_pair < len(self.pairs):
+                i, j = self.pairs[self.current_pair]
+                self.context_label.config(
+                    text=f"{self.alternatives[i]} впливає більше за {self.alternatives[j]}"
+                )
+            # Підсвітити кнопку "Більше"
+            self.less_btn.config(relief='raised', bg='#cccccc')
+            self.more_btn.config(relief='sunken', bg='#999999')
+        elif relation == "менше":
+            self.center_label.config(text="впливає Менше")
+            # Оновити контекстний підпис з назвами альтернатив
+            if self.current_pair < len(self.pairs):
+                i, j = self.pairs[self.current_pair]
+                self.context_label.config(
+                    text=f"{self.alternatives[i]} впливає менше за {self.alternatives[j]}"
+                )
+            # Підсвітити кнопку "Менше"
+            self.less_btn.config(relief='sunken', bg='#999999')
+            self.more_btn.config(relief='raised', bg='#cccccc')
 
     def _on_scale_changed(self, event=None):
         """Обробник зміни шкали"""
@@ -387,6 +473,9 @@ class ComparisonPanel(ttk.Frame):
         self.obj_a_label.config(text=self.alternatives[i])
         self.obj_b_label.config(text=self.alternatives[j])
 
+        # Оновити відображення відношення
+        self._update_relation_display()
+
         # Скинути вибір
         self.selected_section = None
 
@@ -395,6 +484,14 @@ class ComparisonPanel(ttk.Frame):
 
     def _confirm_comparison(self):
         """Підтвердити поточне порівняння"""
+        # Перевірити чи вибрано відношення
+        if not self.relation_var.get():
+            messagebox.showwarning(
+                "Попередження",
+                "Будь ласка, оберіть тип порівняння (Більше або Менше)"
+            )
+            return
+
         # Перевірити чи вибрано секцію
         if self.selected_section is None:
             messagebox.showwarning(
@@ -412,6 +509,10 @@ class ComparisonPanel(ttk.Frame):
 
         # Отримати уніфіковане значення
         unified_value = scale.unify(self.selected_section)
+
+        # Якщо вибрано "менше", інвертувати значення
+        if self.relation_var.get() == "менше":
+            unified_value = 1.0 / unified_value
 
         # Зберегти порівняння
         self.comparisons.append((i, j, unified_value))
