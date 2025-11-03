@@ -283,9 +283,6 @@ class ComparisonPanel(ttk.Frame):
         self.panel_less: Optional[tk.Button] = None
         self.panel_more: Optional[tk.Button] = None
 
-        # Поточне відношення (більше/менше)
-        self.relation_var = tk.StringVar(value="")  # Початково не вибрано
-
         self._create_widgets()
         self._reset_comparison()
 
@@ -956,10 +953,12 @@ class ComparisonPanel(ttk.Frame):
             return
         self.delay_wheel = 0
 
-        if event.delta > 0:
-            self.spin_up_click()
-        else:
-            self.spin_down_click()
+        # Handle different platforms (Windows uses delta, Linux doesn't)
+        if hasattr(event, 'delta'):
+            if event.delta > 0:
+                self.spin_up_click()
+            else:
+                self.spin_down_click()
 
     def no_idea_click(self):
         """Handle 'No idea' click"""
