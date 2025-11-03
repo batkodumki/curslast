@@ -295,124 +295,17 @@ class ComparisonPanel(ttk.Frame):
         return pairs
 
     def _create_widgets(self):
-        # Контейнер для всього вмісту
+        # Контейнер для всього вмісту - горизонтальне розділення
         main_container = ttk.Frame(self)
         main_container.pack(fill='both', expand=True, padx=10, pady=10)
 
-        # Прогрес
-        self.progress_label = ttk.Label(
-            main_container,
-            text="",
-            font=('Arial', 12, 'bold')
-        )
-        self.progress_label.pack(pady=5)
-
-        # ===== DYNAMIC SCALE INTERFACE =====
-        # Головна область порівняння
-        comparison_frame = ttk.Frame(main_container)
-        comparison_frame.pack(fill='both', expand=True, pady=10)
-
-        # Верхня частина - мітки об'єктів
-        top_frame = tk.Frame(comparison_frame, bg='#f0f0f0')
-        top_frame.pack(fill='x', pady=5)
-
-        # Label A (зліва)
-        self.label_a = tk.Label(
-            top_frame,
-            text="Object A",
-            font=('MS Sans Serif', 10),
-            fg='red',
-            bg='#f0f0f0',
-            wraplength=150,
-            justify='left'
-        )
-        self.label_a.pack(side='left', padx=10)
-
-        # Label "is" та "than"
-        center_frame = tk.Frame(top_frame, bg='#f0f0f0')
-        center_frame.pack(side='left', expand=True)
-
-        self.label_is = tk.Label(
-            center_frame,
-            text='is',
-            font=('MS Sans Serif', 12, 'bold'),
-            fg='red',
-            bg='#f0f0f0'
-        )
-        self.label_is.pack(side='left', padx=5)
-
-        self.label_than = tk.Label(
-            center_frame,
-            text='than',
-            font=('MS Sans Serif', 12, 'bold'),
-            fg='red',
-            bg='#f0f0f0'
-        )
-        self.label_than.pack(side='right', padx=5)
-
-        # Label B (справа)
-        self.label_b = tk.Label(
-            top_frame,
-            text="Object B",
-            font=('MS Sans Serif', 10),
-            fg='red',
-            bg='#f0f0f0',
-            wraplength=150,
-            justify='left'
-        )
-        self.label_b.pack(side='right', padx=10)
-
-        # Середня частина - панель шкали
-        middle_frame = tk.Frame(comparison_frame, bg='#f0f0f0')
-        middle_frame.pack(fill='x', pady=5)
-
-        # Контейнер для динамічних панелей
-        self.panel_scale = tk.Frame(middle_frame, bg='#f0f0f0', relief='flat')
-        self.panel_scale.pack(fill='x', padx=150)
-
-        # Початкові кнопки Less/More
-        self.panel_less = tk.Button(
-            self.panel_scale,
-            text='Less preferred',
-            relief='raised',
-            cursor='hand2',
-            bg='red',
-            fg='white',
-            font=('MS Sans Serif', 9)
-        )
-        self.panel_less.place(x=0, y=0, width=235, height=30)
-        self.panel_less.hint = LESS_MORE[0]
-        self.panel_less.config(command=lambda: self.panel_scale_click(self.panel_less))
-
-        self.panel_more = tk.Button(
-            self.panel_scale,
-            text='More preferred',
-            relief='raised',
-            cursor='hand2',
-            bg='red',
-            fg='white',
-            font=('MS Sans Serif', 9)
-        )
-        self.panel_more.place(x=235, y=0, width=240, height=30)
-        self.panel_more.hint = LESS_MORE[1]
-        self.panel_more.config(command=lambda: self.panel_scale_click(self.panel_more))
-
-        # Візуалізація шкали
-        self.image_show = tk.Canvas(
-            middle_frame,
-            bg='white',
-            highlightthickness=1,
-            highlightbackground='gray'
-        )
-        self.image_show.pack(fill='both', expand=True, padx=150, pady=5)
-        self.image_show.configure(height=120)
-
-        # ===== БОКОВА ПАНЕЛЬ З НАЛАШТУВАННЯМИ =====
-        side_frame = ttk.LabelFrame(comparison_frame, text="Налаштування шкали")
-        side_frame.pack(side='left', fill='y', padx=10)
+        # ===== ЛІВА ПАНЕЛЬ - Налаштування шкали =====
+        left_panel = ttk.LabelFrame(main_container, text="Налаштування шкали", width=250)
+        left_panel.pack(side='left', fill='y', padx=(0, 10))
+        left_panel.pack_propagate(False)
 
         # Scale type choice panel
-        self.panel_scale_choice = tk.Frame(side_frame, relief='raised', bd=2)
+        self.panel_scale_choice = tk.Frame(left_panel, relief='raised', bd=2)
         self.panel_scale_choice.pack(padx=5, pady=5, fill='both')
 
         # Button and spin
@@ -421,10 +314,10 @@ class ComparisonPanel(ttk.Frame):
 
         self.panel_scale_button_choice = tk.Button(
             button_spin_frame,
-            text='Scale Type',
+            text='Тип шкали',
             relief='sunken',
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9),
             command=self.toggle_scale_choice
         )
         self.panel_scale_button_choice.pack(side='left', fill='x', expand=True)
@@ -458,7 +351,7 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=1,
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9),
             command=self.scale_choice_changed
         )
         self.rbut_integer.pack(anchor='w', padx=5, pady=2)
@@ -470,7 +363,7 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=2,
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9),
             command=self.scale_choice_changed
         )
         self.rbut_balanced.pack(anchor='w', padx=5, pady=2)
@@ -482,7 +375,7 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=3,
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9),
             command=self.scale_choice_changed
         )
         self.rbut_power.pack(anchor='w', padx=5, pady=2)
@@ -494,7 +387,7 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=4,
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9),
             command=self.scale_choice_changed
         )
         self.rbut_mazheng.pack(anchor='w', padx=5, pady=2)
@@ -506,7 +399,7 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=5,
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9),
             command=self.scale_choice_changed
         )
         self.rbut_dodd.pack(anchor='w', padx=5, pady=2)
@@ -514,19 +407,139 @@ class ComparisonPanel(ttk.Frame):
 
         # No idea button
         self.panel_no_idea = tk.Button(
-            side_frame,
-            text='No idea',
+            left_panel,
+            text='Не впевнений',
             relief='raised',
             cursor='hand2',
-            font=('MS Sans Serif', 9),
+            font=('Arial', 9, 'bold'),
+            bg='#ffcc00',
             command=self.no_idea_click
         )
         self.panel_no_idea.pack(padx=5, pady=10, fill='x')
         self.panel_no_idea.hint = LESS_MORE[2]
 
-        # ===== NAVIGATION BUTTONS =====
-        nav_frame = ttk.Frame(main_container)
-        nav_frame.pack(pady=10)
+        # ===== ПРАВА ПАНЕЛЬ - Область порівняння =====
+        right_panel = ttk.Frame(main_container)
+        right_panel.pack(side='left', fill='both', expand=True)
+
+        # Прогрес
+        self.progress_label = ttk.Label(
+            right_panel,
+            text="",
+            font=('Arial', 12, 'bold')
+        )
+        self.progress_label.pack(pady=5)
+
+        # Заголовок з назвами об'єктів
+        header_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
+        header_frame.pack(fill='x', pady=10)
+
+        # Label A (зліва)
+        self.label_a = tk.Label(
+            header_frame,
+            text="Object A",
+            font=('Arial', 12, 'bold'),
+            fg='#0066cc',
+            bg='white',
+            wraplength=200,
+            justify='left'
+        )
+        self.label_a.pack(side='left', padx=20, pady=10)
+
+        # Center labels
+        center_frame = tk.Frame(header_frame, bg='white')
+        center_frame.pack(side='left', expand=True)
+
+        self.label_is = tk.Label(
+            center_frame,
+            text='впливає',
+            font=('Arial', 11),
+            fg='#666666',
+            bg='white'
+        )
+        self.label_is.pack(pady=2)
+
+        self.label_than = tk.Label(
+            center_frame,
+            text='',
+            font=('Arial', 11, 'bold'),
+            fg='red',
+            bg='white'
+        )
+        self.label_than.pack(pady=2)
+
+        # Label B (справа)
+        self.label_b = tk.Label(
+            header_frame,
+            text="Object B",
+            font=('Arial', 12, 'bold'),
+            fg='#cc0066',
+            bg='white',
+            wraplength=200,
+            justify='right'
+        )
+        self.label_b.pack(side='right', padx=20, pady=10)
+
+        # Середня частина - панель шкали
+        middle_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
+        middle_frame.pack(fill='x', pady=10)
+
+        # Інструкція
+        instruction_label = ttk.Label(
+            middle_frame,
+            text="Оберіть рівень впливу:",
+            font=('Arial', 10)
+        )
+        instruction_label.pack(pady=5)
+
+        # Контейнер для динамічних панелей
+        scale_container = tk.Frame(middle_frame, bg='white')
+        scale_container.pack(fill='x', padx=20, pady=10)
+
+        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40)
+        self.panel_scale.pack(fill='x')
+        self.panel_scale.pack_propagate(False)
+
+        # Початкові кнопки Less/More
+        self.panel_less = tk.Button(
+            self.panel_scale,
+            text='Менше впливає',
+            relief='raised',
+            cursor='hand2',
+            bg='#cc0000',
+            fg='white',
+            font=('Arial', 10, 'bold')
+        )
+        self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
+        self.panel_less.hint = LESS_MORE[0]
+        self.panel_less.config(command=lambda: self.panel_scale_click(self.panel_less))
+
+        self.panel_more = tk.Button(
+            self.panel_scale,
+            text='Більше впливає',
+            relief='raised',
+            cursor='hand2',
+            bg='#cc0000',
+            fg='white',
+            font=('Arial', 10, 'bold')
+        )
+        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+        self.panel_more.hint = LESS_MORE[1]
+        self.panel_more.config(command=lambda: self.panel_scale_click(self.panel_more))
+
+        # Візуалізація шкали
+        self.image_show = tk.Canvas(
+            middle_frame,
+            bg='white',
+            highlightthickness=1,
+            highlightbackground='gray'
+        )
+        self.image_show.pack(fill='both', expand=True, padx=20, pady=5)
+        self.image_show.configure(height=100)
+
+        # ===== КНОПКИ НАВІГАЦІЇ =====
+        nav_frame = ttk.Frame(right_panel)
+        nav_frame.pack(pady=15)
 
         back_btn = ttk.Button(
             nav_frame,
@@ -577,8 +590,8 @@ class ComparisonPanel(ttk.Frame):
         self.scale_panels.clear()
 
         # Reset button positions
-        self.panel_less.place(x=0, y=0, width=235, height=30)
-        self.panel_more.place(x=235, y=0, width=240, height=30)
+        self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
+        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
 
         self._update_display()
 
@@ -597,6 +610,9 @@ class ComparisonPanel(ttk.Frame):
         # Оновити назви альтернатив
         self.label_a.config(text=self.alternatives[i])
         self.label_b.config(text=self.alternatives[j])
+
+        # Reset center label
+        self.label_than.config(text='')
 
         # Clear visualization
         self.image_show.delete('all')
@@ -856,8 +872,11 @@ class ComparisonPanel(ttk.Frame):
         self.build_scale(self.scale_str)
         self.panel_scale_choice.pack(padx=5, pady=5, fill='both')
 
-        st = LESS_MORE[self.reverse]
-        self.label_is.config(text=f'is {st}')
+        # Update center label
+        if self.reverse == 0:
+            self.label_than.config(text='МЕНШЕ')
+        else:
+            self.label_than.config(text='БІЛЬШЕ')
 
     def show_hint_event(self, event):
         """Show graphical hint"""
@@ -1151,7 +1170,7 @@ class MainApplication(tk.Tk):
         super().__init__()
 
         self.title("Експертне оцінювання - Динамічний інтерфейс шкалування")
-        self.geometry("900x750")
+        self.geometry("1000x700")
 
         # Стиль
         self.style = ttk.Style()
