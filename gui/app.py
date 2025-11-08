@@ -648,7 +648,14 @@ class ComparisonPanel(ttk.Frame):
 
         if self.reverse == -1:
             # Initial state - just show Less/More
+            # Make sure Less/More buttons are visible
+            self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
+            self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
             return
+
+        # Hide the original Less/More buttons when showing progressive scale
+        self.panel_less.place_forget()
+        self.panel_more.place_forget()
 
         # Calculate number of panels needed
         li = len(scale_str)
