@@ -258,6 +258,29 @@ class InputPanel(ttk.Frame):
 class ComparisonPanel(ttk.Frame):
     """Панель парних порівнянь з динамічним інтерфейсом шкалування"""
 
+    # Modern Color Scheme
+    COLORS = {
+        'primary': '#4A90E2',
+        'primary_dark': '#357ABD',
+        'primary_light': '#6FA8E8',
+        'secondary': '#7B68EE',
+        'success': '#50C878',
+        'warning': '#FFA500',
+        'danger': '#E74C3C',
+        'background': '#F8F9FA',
+        'card': '#FFFFFF',
+        'card_shadow': '#E8E9EA',
+        'text': '#2C3E50',
+        'text_secondary': '#7F8C8D',
+        'text_light': '#95A5A6',
+        'border': '#DFE4EA',
+        'scale_active': '#5C7CFA',
+        'scale_inactive': '#E9ECEF',
+        'less_color': '#FA5252',
+        'more_color': '#20C997',
+        'equal_color': '#868E96'
+    }
+
     def __init__(self, parent, alternatives, on_complete, on_back):
         super().__init__(parent)
         self.alternatives = alternatives
@@ -295,265 +318,434 @@ class ComparisonPanel(ttk.Frame):
         return pairs
 
     def _create_widgets(self):
-        # Контейнер для всього вмісту - горизонтальне розділення
-        main_container = ttk.Frame(self)
-        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+        """Create modernized UI with professional styling"""
+        # Set background color
+        self.configure(style='Card.TFrame')
 
-        # ===== ЛІВА ПАНЕЛЬ - Налаштування шкали =====
-        left_panel = ttk.LabelFrame(main_container, text="Налаштування шкали", width=250)
-        left_panel.pack(side='left', fill='y', padx=(0, 10))
+        # Main container with better padding
+        main_container = tk.Frame(self, bg=self.COLORS['background'])
+        main_container.pack(fill='both', expand=True, padx=20, pady=20)
+
+        # ===== LEFT PANEL - Scale Settings =====
+        left_panel = tk.Frame(main_container, bg=self.COLORS['card'],
+                             relief='flat', bd=0, width=280)
+        left_panel.pack(side='left', fill='y', padx=(0, 16))
         left_panel.pack_propagate(False)
 
-        # Scale type choice panel
-        self.panel_scale_choice = tk.Frame(left_panel, relief='raised', bd=2)
-        self.panel_scale_choice.pack(padx=5, pady=5, fill='both')
+        # Add subtle shadow effect with border
+        left_panel.configure(highlightbackground=self.COLORS['border'],
+                           highlightthickness=1)
 
-        # Button and spin
-        button_spin_frame = tk.Frame(self.panel_scale_choice)
+        # Left panel header
+        header_left = tk.Frame(left_panel, bg=self.COLORS['primary'], height=50)
+        header_left.pack(fill='x')
+        header_left.pack_propagate(False)
+
+        tk.Label(
+            header_left,
+            text="⚙ Налаштування",
+            font=('Segoe UI', 11, 'bold'),
+            bg=self.COLORS['primary'],
+            fg='white'
+        ).pack(pady=12)
+
+        # Scale type choice panel
+        self.panel_scale_choice = tk.Frame(left_panel, bg=self.COLORS['card'])
+        self.panel_scale_choice.pack(padx=12, pady=12, fill='both')
+
+        # Scale type selector with modern styling
+        selector_frame = tk.Frame(self.panel_scale_choice, bg=self.COLORS['card'])
+        selector_frame.pack(fill='x', pady=(0, 8))
+
+        tk.Label(
+            selector_frame,
+            text="Тип шкали:",
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text_secondary']
+        ).pack(anchor='w', pady=(0, 4))
+
+        button_spin_frame = tk.Frame(selector_frame, bg=self.COLORS['card'])
         button_spin_frame.pack(fill='x')
 
         self.panel_scale_button_choice = tk.Button(
             button_spin_frame,
-            text='Тип шкали',
-            relief='sunken',
+            text='▼ Оберіть тип',
+            relief='solid',
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text'],
+            activebackground=self.COLORS['primary_light'],
+            bd=1,
             command=self.toggle_scale_choice
         )
-        self.panel_scale_button_choice.pack(side='left', fill='x', expand=True)
+        self.panel_scale_button_choice.pack(side='left', fill='x', expand=True, ipady=6)
 
-        # Spin buttons
-        spin_frame = tk.Frame(button_spin_frame)
-        spin_frame.pack(side='right')
+        # Spin buttons with modern style
+        spin_frame = tk.Frame(button_spin_frame, bg=self.COLORS['card'])
+        spin_frame.pack(side='right', padx=(4, 0))
 
         self.spin_up = tk.Button(
             spin_frame,
             text='▲',
             command=self.spin_up_click,
-            width=2
+            width=3,
+            font=('Segoe UI', 8),
+            bg=self.COLORS['scale_inactive'],
+            fg=self.COLORS['text'],
+            activebackground=self.COLORS['primary_light'],
+            relief='solid',
+            bd=1,
+            cursor='hand2'
         )
-        self.spin_up.pack(side='top')
+        self.spin_up.pack(side='top', pady=(0, 2))
 
         self.spin_down = tk.Button(
             spin_frame,
             text='▼',
             command=self.spin_down_click,
-            width=2
+            width=3,
+            font=('Segoe UI', 8),
+            bg=self.COLORS['scale_inactive'],
+            fg=self.COLORS['text'],
+            activebackground=self.COLORS['primary_light'],
+            relief='solid',
+            bd=1,
+            cursor='hand2'
         )
         self.spin_down.pack(side='bottom')
 
-        # Radio buttons for scale types
+        # Radio buttons for scale types with modern styling
         self.scale_type_var = tk.IntVar(value=1)
 
-        self.rbut_integer = tk.Radiobutton(
+        # Separator
+        tk.Frame(
             self.panel_scale_choice,
-            text='Integer',
+            height=1,
+            bg=self.COLORS['border']
+        ).pack(fill='x', pady=8)
+
+        # Radio buttons container
+        radio_container = tk.Frame(self.panel_scale_choice, bg=self.COLORS['card'])
+        radio_container.pack(fill='x')
+
+        self.rbut_integer = tk.Radiobutton(
+            radio_container,
+            text='⬤ Integer Scale',
             variable=self.scale_type_var,
             value=1,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text'],
+            selectcolor=self.COLORS['primary_light'],
+            activebackground=self.COLORS['card'],
             command=self.scale_choice_changed
         )
-        self.rbut_integer.pack(anchor='w', padx=5, pady=2)
+        self.rbut_integer.pack(anchor='w', padx=4, pady=3)
         self.rbut_integer.data = -1
 
         self.rbut_balanced = tk.Radiobutton(
-            self.panel_scale_choice,
-            text='Balanced',
+            radio_container,
+            text='⬤ Balanced Scale',
             variable=self.scale_type_var,
             value=2,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text'],
+            selectcolor=self.COLORS['primary_light'],
+            activebackground=self.COLORS['card'],
             command=self.scale_choice_changed
         )
-        self.rbut_balanced.pack(anchor='w', padx=5, pady=2)
+        self.rbut_balanced.pack(anchor='w', padx=4, pady=3)
         self.rbut_balanced.data = -2
 
         self.rbut_power = tk.Radiobutton(
-            self.panel_scale_choice,
-            text='Power',
+            radio_container,
+            text='⬤ Power Scale',
             variable=self.scale_type_var,
             value=3,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text'],
+            selectcolor=self.COLORS['primary_light'],
+            activebackground=self.COLORS['card'],
             command=self.scale_choice_changed
         )
-        self.rbut_power.pack(anchor='w', padx=5, pady=2)
+        self.rbut_power.pack(anchor='w', padx=4, pady=3)
         self.rbut_power.data = -3
 
         self.rbut_mazheng = tk.Radiobutton(
-            self.panel_scale_choice,
-            text='Ma-Zheng (9/9-9/1)',
+            radio_container,
+            text='⬤ Ma-Zheng (9/9-9/1)',
             variable=self.scale_type_var,
             value=4,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text'],
+            selectcolor=self.COLORS['primary_light'],
+            activebackground=self.COLORS['card'],
             command=self.scale_choice_changed
         )
-        self.rbut_mazheng.pack(anchor='w', padx=5, pady=2)
+        self.rbut_mazheng.pack(anchor='w', padx=4, pady=3)
         self.rbut_mazheng.data = -4
 
         self.rbut_dodd = tk.Radiobutton(
-            self.panel_scale_choice,
-            text='Donegan-Dodd-McMasters',
+            radio_container,
+            text='⬤ Donegan-Dodd-McMasters',
             variable=self.scale_type_var,
             value=5,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=self.COLORS['card'],
+            fg=self.COLORS['text'],
+            selectcolor=self.COLORS['primary_light'],
+            activebackground=self.COLORS['card'],
             command=self.scale_choice_changed
         )
-        self.rbut_dodd.pack(anchor='w', padx=5, pady=2)
+        self.rbut_dodd.pack(anchor='w', padx=4, pady=3)
         self.rbut_dodd.data = -5
 
-        # No idea button
+        # Spacer to push button to bottom
+        tk.Frame(left_panel, bg=self.COLORS['card']).pack(fill='both', expand=True)
+
+        # Separator above button
+        tk.Frame(left_panel, height=1, bg=self.COLORS['border']).pack(fill='x')
+
+        # No idea button with modern styling
         self.panel_no_idea = tk.Button(
             left_panel,
-            text='Не впевнений',
-            relief='raised',
+            text='❓ Не впевнений\n(Рівноцінно)',
+            relief='flat',
             cursor='hand2',
-            font=('Arial', 9, 'bold'),
-            bg='#ffcc00',
-            command=self.no_idea_click
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.COLORS['warning'],
+            fg='white',
+            activebackground=self.COLORS['warning'],
+            activeforeground='white',
+            command=self.no_idea_click,
+            height=3
         )
-        self.panel_no_idea.pack(padx=5, pady=10, fill='x')
+        self.panel_no_idea.pack(fill='x')
         self.panel_no_idea.hint = LESS_MORE[2]
 
-        # ===== ПРАВА ПАНЕЛЬ - Область порівняння =====
-        right_panel = ttk.Frame(main_container)
+        # ===== RIGHT PANEL - Comparison Area =====
+        right_panel = tk.Frame(main_container, bg=self.COLORS['card'],
+                              relief='flat', bd=0)
         right_panel.pack(side='left', fill='both', expand=True)
 
-        # Прогрес
-        self.progress_label = ttk.Label(
-            right_panel,
+        # Add subtle border
+        right_panel.configure(highlightbackground=self.COLORS['border'],
+                            highlightthickness=1)
+
+        # Right panel header with gradient-like effect
+        header_right = tk.Frame(right_panel, bg=self.COLORS['primary'], height=50)
+        header_right.pack(fill='x')
+        header_right.pack_propagate(False)
+
+        # Progress label inside header
+        self.progress_label = tk.Label(
+            header_right,
             text="",
-            font=('Arial', 12, 'bold')
+            font=('Segoe UI', 11, 'bold'),
+            bg=self.COLORS['primary'],
+            fg='white'
         )
-        self.progress_label.pack(pady=5)
+        self.progress_label.pack(pady=12)
 
-        # Заголовок з назвами об'єктів
-        header_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
-        header_frame.pack(fill='x', pady=10)
+        # Content area inside right panel
+        content_area = tk.Frame(right_panel, bg=self.COLORS['card'])
+        content_area.pack(fill='both', expand=True, padx=16, pady=16)
 
-        # Label A (зліва)
+        # Comparison header with object names
+        header_frame = tk.Frame(content_area, bg=self.COLORS['background'],
+                               relief='flat', bd=0, height=80)
+        header_frame.pack(fill='x', pady=(0, 12))
+        header_frame.pack_propagate(False)
+
+        # Add border to header
+        header_frame.configure(highlightbackground=self.COLORS['border'],
+                              highlightthickness=1)
+
+        # Label A (left)
         self.label_a = tk.Label(
             header_frame,
             text="Object A",
-            font=('Arial', 12, 'bold'),
-            fg='#0066cc',
-            bg='white',
-            wraplength=200,
+            font=('Segoe UI', 13, 'bold'),
+            fg=self.COLORS['primary'],
+            bg=self.COLORS['background'],
+            wraplength=220,
             justify='left'
         )
-        self.label_a.pack(side='left', padx=20, pady=10)
+        self.label_a.pack(side='left', padx=16, pady=12)
 
-        # Center labels
-        center_frame = tk.Frame(header_frame, bg='white')
-        center_frame.pack(side='left', expand=True)
+        # Center section with comparison text
+        center_frame = tk.Frame(header_frame, bg=self.COLORS['background'])
+        center_frame.pack(side='left', expand=True, fill='both')
 
         self.label_is = tk.Label(
             center_frame,
             text='впливає',
-            font=('Arial', 11),
-            fg='#666666',
-            bg='white'
+            font=('Segoe UI', 10),
+            fg=self.COLORS['text_secondary'],
+            bg=self.COLORS['background']
         )
-        self.label_is.pack(pady=2)
+        self.label_is.pack(expand=True)
 
         self.label_than = tk.Label(
             center_frame,
             text='',
-            font=('Arial', 11, 'bold'),
-            fg='red',
-            bg='white'
+            font=('Segoe UI', 12, 'bold'),
+            fg=self.COLORS['danger'],
+            bg=self.COLORS['background']
         )
-        self.label_than.pack(pady=2)
+        self.label_than.pack(expand=True)
 
-        # Label B (справа)
+        # Label B (right)
         self.label_b = tk.Label(
             header_frame,
             text="Object B",
-            font=('Arial', 12, 'bold'),
-            fg='#cc0066',
-            bg='white',
-            wraplength=200,
+            font=('Segoe UI', 13, 'bold'),
+            fg=self.COLORS['secondary'],
+            bg=self.COLORS['background'],
+            wraplength=220,
             justify='right'
         )
-        self.label_b.pack(side='right', padx=20, pady=10)
+        self.label_b.pack(side='right', padx=16, pady=12)
 
-        # Середня частина - панель шкали
-        middle_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
-        middle_frame.pack(fill='x', pady=10)
+        # Scale selection area
+        scale_section = tk.Frame(content_area, bg=self.COLORS['background'],
+                                relief='flat', bd=0)
+        scale_section.pack(fill='x', pady=(0, 12))
 
-        # Інструкція
-        instruction_label = ttk.Label(
-            middle_frame,
-            text="Оберіть рівень впливу:",
-            font=('Arial', 10)
-        )
-        instruction_label.pack(pady=5)
+        # Add border
+        scale_section.configure(highlightbackground=self.COLORS['border'],
+                               highlightthickness=1)
 
-        # Контейнер для динамічних панелей
-        scale_container = tk.Frame(middle_frame, bg='white')
-        scale_container.pack(fill='x', padx=20, pady=10)
+        # Instruction with icon
+        instruction_header = tk.Frame(scale_section, bg=self.COLORS['primary_light'],
+                                     height=36)
+        instruction_header.pack(fill='x')
+        instruction_header.pack_propagate(False)
 
-        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40)
+        tk.Label(
+            instruction_header,
+            text="👆 Оберіть рівень впливу",
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.COLORS['primary_light'],
+            fg='white'
+        ).pack(pady=8)
+
+        # Container for dynamic scale panels
+        scale_container = tk.Frame(scale_section, bg=self.COLORS['card'])
+        scale_container.pack(fill='x', padx=16, pady=16)
+
+        self.panel_scale = tk.Frame(scale_container, bg=self.COLORS['background'],
+                                    relief='flat', height=50)
         self.panel_scale.pack(fill='x')
         self.panel_scale.pack_propagate(False)
 
-        # Початкові кнопки Less/More
+        # Initial Less/More buttons with modern styling
         self.panel_less = tk.Button(
             self.panel_scale,
-            text='Менше впливає',
-            relief='raised',
+            text='◀ Менше впливає',
+            relief='flat',
             cursor='hand2',
-            bg='#cc0000',
+            bg=self.COLORS['less_color'],
             fg='white',
-            font=('Arial', 10, 'bold')
+            font=('Segoe UI', 11, 'bold'),
+            activebackground='#E03131',
+            activeforeground='white'
         )
-        self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
+        self.panel_less.place(x=0, y=5, relwidth=0.48, height=40)
         self.panel_less.hint = LESS_MORE[0]
         self.panel_less.config(command=lambda: self.panel_scale_click(self.panel_less))
 
         self.panel_more = tk.Button(
             self.panel_scale,
-            text='Більше впливає',
-            relief='raised',
+            text='Більше впливає ▶',
+            relief='flat',
             cursor='hand2',
-            bg='#cc0000',
+            bg=self.COLORS['more_color'],
             fg='white',
-            font=('Arial', 10, 'bold')
+            font=('Segoe UI', 11, 'bold'),
+            activebackground='#12B886',
+            activeforeground='white'
         )
-        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=40)
         self.panel_more.hint = LESS_MORE[1]
         self.panel_more.config(command=lambda: self.panel_scale_click(self.panel_more))
 
-        # Візуалізація шкали
+        # Visualization area with improved styling
+        viz_frame = tk.Frame(content_area, bg=self.COLORS['background'],
+                            relief='flat', bd=0)
+        viz_frame.pack(fill='both', expand=True)
+
+        # Add border
+        viz_frame.configure(highlightbackground=self.COLORS['border'],
+                           highlightthickness=1)
+
+        # Visualization header
+        viz_header = tk.Frame(viz_frame, bg=self.COLORS['scale_inactive'],
+                             height=32)
+        viz_header.pack(fill='x')
+        viz_header.pack_propagate(False)
+
+        tk.Label(
+            viz_header,
+            text="📊 Візуалізація шкали",
+            font=('Segoe UI', 9, 'bold'),
+            bg=self.COLORS['scale_inactive'],
+            fg=self.COLORS['text']
+        ).pack(pady=6)
+
         self.image_show = tk.Canvas(
-            middle_frame,
-            bg='white',
-            highlightthickness=1,
-            highlightbackground='gray'
+            viz_frame,
+            bg=self.COLORS['card'],
+            highlightthickness=0
         )
-        self.image_show.pack(fill='both', expand=True, padx=20, pady=5)
-        self.image_show.configure(height=100)
+        self.image_show.pack(fill='both', expand=True, padx=8, pady=8)
+        self.image_show.configure(height=120)
 
-        # ===== КНОПКИ НАВІГАЦІЇ =====
-        nav_frame = ttk.Frame(right_panel)
-        nav_frame.pack(pady=15)
+        # ===== NAVIGATION BUTTONS =====
+        nav_frame = tk.Frame(content_area, bg=self.COLORS['card'])
+        nav_frame.pack(pady=(12, 0))
 
-        back_btn = ttk.Button(
+        # Back button
+        back_btn = tk.Button(
             nav_frame,
             text="← Попередня пара",
-            command=self._go_back
+            command=self._go_back,
+            font=('Segoe UI', 9),
+            bg=self.COLORS['scale_inactive'],
+            fg=self.COLORS['text'],
+            activebackground=self.COLORS['border'],
+            cursor='hand2',
+            relief='flat',
+            padx=16,
+            pady=8
         )
-        back_btn.pack(side='left', padx=5)
+        back_btn.pack(side='left', padx=(0, 8))
 
-        return_btn = ttk.Button(
+        # Return button
+        return_btn = tk.Button(
             nav_frame,
-            text="Повернутися до введення",
-            command=self.on_back
+            text="⏎ Повернутися до введення",
+            command=self.on_back,
+            font=('Segoe UI', 9),
+            bg=self.COLORS['scale_inactive'],
+            fg=self.COLORS['text'],
+            activebackground=self.COLORS['border'],
+            cursor='hand2',
+            relief='flat',
+            padx=16,
+            pady=8
         )
-        return_btn.pack(side='left', padx=5)
+        return_btn.pack(side='left')
 
         # Create graphic hint window
         self.hint_window = GraphicHintWindow(self.winfo_toplevel())
@@ -578,10 +770,10 @@ class ComparisonPanel(ttk.Frame):
         self.scale_str = '0'
         self.scale_type_id = 1
 
-        self.panel_no_idea.config(text=PREF[1])
+        self.panel_no_idea.config(text='❓ Не впевнений\n(Рівноцінно)')
         self.panel_no_idea.hint = PREF[1]
-        self.panel_less.config(text=LESS_MORE[0])
-        self.panel_more.config(text=LESS_MORE[1])
+        self.panel_less.config(text='◀ Менше впливає')
+        self.panel_more.config(text='Більше впливає ▶')
         self.panel_scale_choice.pack_forget()
 
         # Clear dynamic panels
@@ -589,9 +781,9 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
-        # Reset button positions
-        self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
-        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+        # Reset button positions and styling
+        self.panel_less.place(x=0, y=5, relwidth=0.48, height=40)
+        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=40)
 
         self._update_display()
 
@@ -649,8 +841,8 @@ class ComparisonPanel(ttk.Frame):
         if self.reverse == -1:
             # Initial state - just show Less/More
             # Make sure Less/More buttons are visible
-            self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
-            self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+            self.panel_less.place(x=0, y=5, relwidth=0.48, height=40)
+            self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=40)
             return
 
         # Hide the original Less/More buttons when showing progressive scale
@@ -675,13 +867,14 @@ class ComparisonPanel(ttk.Frame):
         panel_scale_width = 475
 
         for i in range(li, -1, -1):  # Reverse order
-            # Create new panel
+            # Create new panel with modern styling
             new_pin = tk.Button(
                 self.panel_scale,
                 text='',
-                relief='raised',
+                relief='flat',
                 cursor='hand2',
-                font=('MS Sans Serif', 8)
+                font=('Segoe UI', 9, 'bold'),
+                bd=0
             )
 
             if i == li:
@@ -689,7 +882,12 @@ class ComparisonPanel(ttk.Frame):
                 width = panel_scale_width // 9
                 wi = width
                 caption = LESS_MORE[1 - self.reverse]
-                new_pin.config(text=caption, bg='#f0f0f0', fg='black')
+                new_pin.config(
+                    text=caption,
+                    bg=self.COLORS['scale_inactive'],
+                    fg=self.COLORS['text'],
+                    activebackground=self.COLORS['border']
+                )
                 new_pin.hint = caption
 
                 if self.reverse == 1:  # More
@@ -720,7 +918,7 @@ class ComparisonPanel(ttk.Frame):
                         is_grouped = True
 
                     if is_grouped and self.scale_type_var.get() != 1:
-                        # Grouped panels
+                        # Grouped panels with modern styling
                         if (scale_str in ['25679', '2589']) and grade_char == '2':
                             width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
                                         (self.integer_by_scale(2) + self.integer_by_scale(3) +
@@ -732,31 +930,43 @@ class ComparisonPanel(ttk.Frame):
                         elif (scale_str in ['23459', '25679']) and grade_char == '9':
                             width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
                                         (self.integer_by_scale(8) + self.integer_by_scale(9)))
-                        new_pin.config(bg='#f0f0f0', fg='black')
+                        new_pin.config(
+                            bg=self.COLORS['scale_inactive'],
+                            fg=self.COLORS['text'],
+                            activebackground=self.COLORS['border']
+                        )
                     else:
-                        # Active panels
+                        # Active panels with modern styling
                         if self.scale_type_var.get() == 1:  # Integer
                             width = width // (len(scale_str) - 2)
                         else:
                             width = round(panel_scale_width * 16 / 9 / 2 / sum_w *
                                         self.integer_by_scale(grade))
-                        new_pin.config(bg='red', fg='white')
+                        new_pin.config(
+                            bg=self.COLORS['scale_active'],
+                            fg='white',
+                            activebackground=self.COLORS['primary_dark']
+                        )
                 else:
-                    # Regular scale
+                    # Regular scale with modern styling
                     if self.scale_type_var.get() == 1:  # Integer
                         width = panel_scale_width / 2 * 16 / 9 / li
                         width = int(width)
                     else:
                         width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
                                     self.integer_by_scale(1.5 + (li - i - 0.5) * (9.5 - 1.5) / li))
-                    new_pin.config(bg='red', fg='white')
+                    new_pin.config(
+                        bg=self.COLORS['scale_active'],
+                        fg='white',
+                        activebackground=self.COLORS['primary_dark']
+                    )
 
                 wi += width
                 left = panel_scale_width * (1 - self.reverse) - wi + 2 * wi * self.reverse - width * self.reverse
                 new_pin.hint = PREF[grade]
 
-            # Position panel
-            new_pin.place(x=int(left), y=0, width=int(width), height=30)
+            # Position panel with modern height
+            new_pin.place(x=int(left), y=5, width=int(width), height=40)
 
             # Bind events
             new_pin.config(command=lambda p=new_pin: self.panel_scale_click(p))
