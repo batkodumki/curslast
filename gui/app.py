@@ -769,6 +769,9 @@ class ComparisonPanel(ttk.Frame):
         wi = 0  # Width accumulator
         panel_scale_width = 800  # Increased for better visual clarity
 
+        # Store divider positions to create them after all buttons
+        divider_positions = []
+
         for i in range(li, -1, -1):  # Reverse order
             # Create new panel з сучасним дизайном
             new_pin = tk.Button(
@@ -858,17 +861,10 @@ class ComparisonPanel(ttk.Frame):
             # Position panel (updated height for modern design)
             new_pin.place(x=int(left), y=0, width=int(width), height=32)
 
-            # Add thin black divider line to the right of this button (except for last button)
+            # Store divider position (to create after all buttons)
             if i < li:
                 divider_x = int(left + width)
-                divider = tk.Frame(
-                    self.panel_scale,
-                    bg='black',
-                    width=1,
-                    height=32
-                )
-                divider.place(x=divider_x, y=0, width=1, height=32)
-                self.scale_dividers.append(divider)
+                divider_positions.append(divider_x)
 
             # Bind events
             new_pin.config(command=lambda p=new_pin: self.panel_scale_click(p))
@@ -877,6 +873,17 @@ class ComparisonPanel(ttk.Frame):
 
             if i < li:
                 self.scale_panels.append(new_pin)
+
+        # Create all dividers AFTER all buttons (so they appear on top)
+        for divider_x in divider_positions:
+            divider = tk.Frame(
+                self.panel_scale,
+                bg='black',
+                width=1,
+                height=32
+            )
+            divider.place(x=divider_x, y=0, width=1, height=32)
+            self.scale_dividers.append(divider)
 
         # Update visualization
         self.show_image()
