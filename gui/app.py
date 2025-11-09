@@ -221,9 +221,9 @@ class ComparisonPanel(ttk.Frame):
         self.obj_b_label = ttk.Label(header_frame, text="Object B", font=('Arial', 11))
         self.obj_b_label.pack(side='right')
 
-        # Canvas для горизонтального бара
-        self.bar_canvas = tk.Canvas(right_panel, height=80, bg='white')
-        self.bar_canvas.pack(fill='x', pady=10)
+        # Canvas для горизонтального бара (збільшено висоту для кращої читабельності)
+        self.bar_canvas = tk.Canvas(right_panel, height=120, bg='white')
+        self.bar_canvas.pack(fill='x', pady=10, padx=40)  # Додано padx для центрування
         self.bar_canvas.bind('<Configure>', self._on_canvas_resize)
         self.bar_canvas.bind('<Button-1>', self._on_bar_click)
 
@@ -307,20 +307,28 @@ class ComparisonPanel(ttk.Frame):
         self._draw_bar()
 
     def _on_bar_click(self, event):
-        """Обробник кліку по бару"""
+        """Обробник кліку по бару (оновлено для центрованого бара)"""
         # Визначити на яку секцію клікнули
         gradations = self.gradations_var.get()
 
         canvas_width = self.bar_canvas.winfo_width()
-        section_width = canvas_width / gradations
 
-        section_index = int(event.x / section_width)
-        if 0 <= section_index < gradations:
-            self.selected_section = section_index
-            self._draw_bar()
+        # Враховуємо horizontal padding
+        horizontal_padding = 20
+        usable_width = canvas_width - (2 * horizontal_padding)
+        section_width = usable_width / gradations
+
+        # Коригуємо позицію кліку з урахуванням padding
+        adjusted_x = event.x - horizontal_padding
+
+        if adjusted_x >= 0:  # Клік в межах бара
+            section_index = int(adjusted_x / section_width)
+            if 0 <= section_index < gradations:
+                self.selected_section = section_index
+                self._draw_bar()
 
     def _draw_bar(self):
-        """Намалювати горизонтальний бар з секціями"""
+        """Намалювати горизонтальний бар з секціями (покращена версія з центруванням)"""
         # Очистити canvas
         self.bar_canvas.delete('all')
 
@@ -335,14 +343,19 @@ class ComparisonPanel(ttk.Frame):
         if canvas_width < 10:  # canvas ще не ініціалізовано
             return
 
-        bar_height = 40
-        bar_y = 30
-        section_width = canvas_width / gradations
+        # Збільшена висота бара для кращої читабельності
+        bar_height = 60
+        bar_y = 40
+
+        # Додати горизонтальний padding для центрування
+        horizontal_padding = 20
+        usable_width = canvas_width - (2 * horizontal_padding)
+        section_width = usable_width / gradations
 
         # Намалювати секції
         for i in range(gradations):
-            x1 = i * section_width
-            x2 = (i + 1) * section_width
+            x1 = horizontal_padding + (i * section_width)
+            x2 = horizontal_padding + ((i + 1) * section_width)
 
             # Колір секції - червоний, але темніший для вибраної
             if self.selected_section == i:
@@ -364,9 +377,9 @@ class ComparisonPanel(ttk.Frame):
                 # Розмістити текст над секцією
                 text_x = x1 + section_width / 2
                 self.bar_canvas.create_text(
-                    text_x, bar_y - 10,
+                    text_x, bar_y - 15,
                     text=label,
-                    font=('Arial', 8),
+                    font=('Arial', 10, 'bold'),  # Збільшено розмір шрифту
                     anchor='s'
                 )
 
