@@ -497,7 +497,7 @@ class ComparisonPanel(ttk.Frame):
         scale_container = tk.Frame(middle_frame, bg='white')
         scale_container.pack(fill='x', padx=50, pady=10)
 
-        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40, width=600)
+        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40, width=800)
         self.panel_scale.pack(anchor='center')
         self.panel_scale.pack_propagate(False)
 
@@ -684,7 +684,7 @@ class ComparisonPanel(ttk.Frame):
 
         # Build panels
         wi = 0  # Width accumulator
-        panel_scale_width = 600  # Increased from 475 for better balance
+        panel_scale_width = 800  # Increased for better visual clarity
 
         for i in range(li, -1, -1):  # Reverse order
             # Create new panel
@@ -793,7 +793,7 @@ class ComparisonPanel(ttk.Frame):
             return
 
         # Find min/max positions
-        min_l = 600  # Updated to match panel_scale_width
+        min_l = 800  # Updated to match panel_scale_width
         max_r = 0
 
         for panel in self.scale_panels:
