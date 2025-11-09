@@ -652,6 +652,12 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        # IMPORTANT: Clear directional indicator (gray Less/More button) if it exists
+        # This prevents the old indicator from staying visible when rebuilding the scale
+        if self.directional_indicator:
+            self.directional_indicator.destroy()
+            self.directional_indicator = None
+
         if self.reverse == -1:
             # Initial state - just show Less/More
             # Make sure Less/More buttons are visible
