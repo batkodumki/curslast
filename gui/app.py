@@ -21,18 +21,18 @@ from gui.calculations import (
 # Constants from Delphi implementation
 PREF = [
     '',  # Index 0 not used
-    'Equally',                # 1
-    'Weakly or slightly',     # 2
-    'Moderately',             # 3
-    'Moderately plus',        # 4
-    'Strongly',               # 5
-    'Strongly plus',          # 6
-    'Very strongly',          # 7
-    'Very, very strongly',    # 8
-    'Extremely'               # 9
+    'Однаково',               # 1 - Equally
+    'Слабко',                 # 2 - Weakly or slightly
+    'Помірно',                # 3 - Moderately
+    'Помірно плюс',           # 4 - Moderately plus
+    'Сильно',                 # 5 - Strongly
+    'Сильно плюс',            # 6 - Strongly plus
+    'Дуже сильно',            # 7 - Very strongly
+    'Дуже-дуже сильно',       # 8 - Very, very strongly
+    'Надзвичайно'             # 9 - Extremely
 ]
 
-LESS_MORE = ['Less', 'More', 'Not sure']
+LESS_MORE = ['Менше', 'Більше', 'Не впевнений']
 
 GRADUAL_SCALE = {
     2: '25',
@@ -406,19 +406,6 @@ class ComparisonPanel(ttk.Frame):
         self.rbut_dodd.pack(anchor='w', padx=5, pady=2)
         self.rbut_dodd.data = -5
 
-        # No idea button
-        self.panel_no_idea = tk.Button(
-            left_panel,
-            text='Не впевнений',
-            relief='raised',
-            cursor='hand2',
-            font=('Arial', 9, 'bold'),
-            bg='#ffcc00',
-            command=self.no_idea_click
-        )
-        self.panel_no_idea.pack(padx=5, pady=10, fill='x')
-        self.panel_no_idea.hint = LESS_MORE[2]
-
         # ===== ПРАВА ПАНЕЛЬ - Область порівняння =====
         right_panel = ttk.Frame(main_container)
         right_panel.pack(side='left', fill='both', expand=True)
@@ -430,6 +417,20 @@ class ComparisonPanel(ttk.Frame):
             font=('Arial', 12, 'bold')
         )
         self.progress_label.pack(pady=5)
+
+        # Кнопка підтвердження (Confirm button to skip/confirm current comparison)
+        self.confirm_button = tk.Button(
+            right_panel,
+            text='Підтверджую',
+            relief='raised',
+            cursor='hand2',
+            bg='#4CAF50',
+            fg='white',
+            font=('Arial', 11, 'bold'),
+            state='normal',
+            command=self._confirm_current_selection
+        )
+        self.confirm_button.pack(pady=10)
 
         # Заголовок з назвами об'єктів
         header_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
@@ -497,7 +498,7 @@ class ComparisonPanel(ttk.Frame):
         scale_container = tk.Frame(middle_frame, bg='white')
         scale_container.pack(fill='x', padx=50, pady=10)
 
-        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40, width=600)
+        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40, width=800)
         self.panel_scale.pack(anchor='center')
         self.panel_scale.pack_propagate(False)
 
@@ -560,7 +561,7 @@ class ComparisonPanel(ttk.Frame):
         self.hint_window = GraphicHintWindow(self.winfo_toplevel())
 
         # Bind hint events
-        for widget in [self.panel_less, self.panel_more, self.panel_no_idea,
+        for widget in [self.panel_less, self.panel_more,
                       self.rbut_integer, self.rbut_balanced, self.rbut_power,
                       self.rbut_mazheng, self.rbut_dodd]:
             widget.bind('<Enter>', self.show_hint_event)
@@ -571,6 +572,9 @@ class ComparisonPanel(ttk.Frame):
         self.bind_all('<Button-4>', lambda e: self.spin_up_click())
         self.bind_all('<Button-5>', lambda e: self.spin_down_click())
 
+        # Bind Enter key to confirm current selection (like in original Delphi)
+        self.bind_all('<Return>', lambda e: self._confirm_current_selection())
+
     def _reset_comparison(self):
         """Reset state for new comparison"""
         self.reverse = -1
@@ -579,8 +583,6 @@ class ComparisonPanel(ttk.Frame):
         self.scale_str = '0'
         self.scale_type_id = 1
 
-        self.panel_no_idea.config(text=PREF[1])
-        self.panel_no_idea.hint = PREF[1]
         self.panel_less.config(text=LESS_MORE[0])
         self.panel_more.config(text=LESS_MORE[1])
         self.panel_scale_choice.pack_forget()
@@ -684,7 +686,7 @@ class ComparisonPanel(ttk.Frame):
 
         # Build panels
         wi = 0  # Width accumulator
-        panel_scale_width = 600  # Increased from 475 for better balance
+        panel_scale_width = 800  # Increased for better visual clarity
 
         for i in range(li, -1, -1):  # Reverse order
             # Create new panel
@@ -793,7 +795,7 @@ class ComparisonPanel(ttk.Frame):
             return
 
         # Find min/max positions
-        min_l = 600  # Updated to match panel_scale_width
+        min_l = 800  # Updated to match panel_scale_width
         max_r = 0
 
         for panel in self.scale_panels:
@@ -827,9 +829,6 @@ class ComparisonPanel(ttk.Frame):
 
         # Handle Less/More selection
         if hint in [LESS_MORE[0], LESS_MORE[1]]:
-            self.panel_no_idea.config(text=PREF[1])
-            self.panel_no_idea.hint = PREF[1]
-
             if hint == LESS_MORE[0]:
                 self.reverse = 0  # Less
             else:
@@ -1002,13 +1001,19 @@ class ComparisonPanel(ttk.Frame):
             else:
                 self.spin_down_click()
 
-    def no_idea_click(self):
-        """Handle 'No idea' click"""
-        # Set result to 1 (equal) with zero reliability
-        self.res = 1.0
-        self.rel = 0.0
-        self.reverse = -1
-        self._confirm_comparison()
+    def _confirm_current_selection(self):
+        """Confirm current selection (even if partial) and move to next comparison"""
+        # This allows users to skip/confirm at any stage of the progressive refinement
+        # Similar to pressing Enter in the original Delphi implementation
+        if self.reverse > -1:
+            # User has made at least a Less/More selection
+            # Confirm with current res/rel values
+            self._confirm_comparison()
+        else:
+            # No selection made yet - treat as "not sure" (equal with zero reliability)
+            self.res = 1.0
+            self.rel = 0.0
+            self._confirm_comparison()
 
     def _confirm_comparison(self):
         """Confirm current comparison and move to next"""
