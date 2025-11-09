@@ -280,6 +280,7 @@ class ComparisonPanel(ttk.Frame):
 
         # UI component references
         self.scale_panels: List[tk.Button] = []
+        self.directional_indicator: Optional[tk.Button] = None  # Track the gray Less/More box
         self.panel_less: Optional[tk.Button] = None
         self.panel_more: Optional[tk.Button] = None
 
@@ -589,6 +590,11 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        # Clear directional indicator if it exists
+        if self.directional_indicator:
+            self.directional_indicator.destroy()
+            self.directional_indicator = None
+
         # Reset button positions
         self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
         self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
@@ -646,6 +652,12 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        # IMPORTANT: Clear directional indicator (gray Less/More button) if it exists
+        # This prevents the old indicator from staying visible when rebuilding the scale
+        if self.directional_indicator:
+            self.directional_indicator.destroy()
+            self.directional_indicator = None
+
         if self.reverse == -1:
             # Initial state - just show Less/More
             # Make sure Less/More buttons are visible
@@ -696,6 +708,9 @@ class ComparisonPanel(ttk.Frame):
                     left = 0
                 else:  # Less
                     left = panel_scale_width - width
+
+                # Track this directional indicator for cleanup
+                self.directional_indicator = new_pin
             else:
                 # Regular gradation panel
                 idx = li - i - 1
@@ -1033,6 +1048,15 @@ class ComparisonPanel(ttk.Frame):
 
     def _finish_comparisons(self):
         """Завершити порівняння"""
+        # Clean up any remaining UI elements
+        for panel in self.scale_panels:
+            panel.destroy()
+        self.scale_panels.clear()
+
+        if self.directional_indicator:
+            self.directional_indicator.destroy()
+            self.directional_indicator = None
+
         self.hint_window.destroy()
         self.on_complete(self.comparisons)
 
