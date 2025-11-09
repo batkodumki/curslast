@@ -431,6 +431,20 @@ class ComparisonPanel(ttk.Frame):
         )
         self.progress_label.pack(pady=5)
 
+        # Кнопка підтвердження (Confirm button to skip/confirm current comparison)
+        self.confirm_button = tk.Button(
+            right_panel,
+            text='Підтверджую',
+            relief='raised',
+            cursor='hand2',
+            bg='#4CAF50',
+            fg='white',
+            font=('Arial', 11, 'bold'),
+            state='disabled',
+            command=self._confirm_current_selection
+        )
+        self.confirm_button.pack(pady=10)
+
         # Заголовок з назвами об'єктів
         header_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
         header_frame.pack(fill='x', pady=10)
@@ -571,6 +585,9 @@ class ComparisonPanel(ttk.Frame):
         self.bind_all('<Button-4>', lambda e: self.spin_up_click())
         self.bind_all('<Button-5>', lambda e: self.spin_down_click())
 
+        # Bind Enter key to confirm current selection (like in original Delphi)
+        self.bind_all('<Return>', lambda e: self._confirm_current_selection())
+
     def _reset_comparison(self):
         """Reset state for new comparison"""
         self.reverse = -1
@@ -584,6 +601,9 @@ class ComparisonPanel(ttk.Frame):
         self.panel_less.config(text=LESS_MORE[0])
         self.panel_more.config(text=LESS_MORE[1])
         self.panel_scale_choice.pack_forget()
+
+        # Disable confirm button for new comparison
+        self.confirm_button.config(state='disabled')
 
         # Clear dynamic panels
         for panel in self.scale_panels:
@@ -835,6 +855,9 @@ class ComparisonPanel(ttk.Frame):
             else:
                 self.reverse = 1  # More
 
+            # Enable confirm button after Less/More selection
+            self.confirm_button.config(state='normal')
+
         # Progressive refinement logic
         if self.scale_str == '0':
             # First level - coarse scale
@@ -1009,6 +1032,20 @@ class ComparisonPanel(ttk.Frame):
         self.rel = 0.0
         self.reverse = -1
         self._confirm_comparison()
+
+    def _confirm_current_selection(self):
+        """Confirm current selection (even if partial) and move to next comparison"""
+        # This allows users to skip/confirm at any stage of the progressive refinement
+        # Similar to pressing Enter in the original Delphi implementation
+        if self.reverse > -1:
+            # User has made at least a Less/More selection
+            # Confirm with current res/rel values
+            self._confirm_comparison()
+        else:
+            # No selection made yet - treat as "not sure" (equal with zero reliability)
+            self.res = 1.0
+            self.rel = 0.0
+            self._confirm_comparison()
 
     def _confirm_comparison(self):
         """Confirm current comparison and move to next"""
