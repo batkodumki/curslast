@@ -37,6 +37,33 @@ PREF = [
     'Extremely'               # 9
 ]
 
+# Descriptive labels for scale segments (Saaty-style naming adapted to current logic)
+PREF_LESS = [
+    '',                          # Index 0 not used
+    'Equal',                     # 1
+    'Slightly less',             # 2
+    'Moderately less',           # 3
+    'Moderately+ less',          # 4
+    'Strongly less',             # 5
+    'Strongly+ less',            # 6
+    'Very strongly less',        # 7
+    'Very, very strongly less',  # 8
+    'Extremely less'             # 9
+]
+
+PREF_MORE = [
+    '',                          # Index 0 not used
+    'Equal',                     # 1
+    'Slightly more',             # 2
+    'Moderately more',           # 3
+    'Moderately+ more',          # 4
+    'Strongly more',             # 5
+    'Strongly+ more',            # 6
+    'Very strongly more',        # 7
+    'Very, very strongly more',  # 8
+    'Extremely more'             # 9
+]
+
 # Less/More labels (LessMore array from UForm.pas line 72-73)
 LESS_MORE = ['Less', 'More', 'Not sure']
 
@@ -221,15 +248,15 @@ class DynamicScaleInterface:
     def setup_window(self):
         """Configure main window (from UForm_dfm.txt lines 1-28)."""
         self.root.title('Make a choice using visual hints')  # Line 6
-        self.root.geometry('779x195')  # Width=779, Height=195 from lines 8-9
+        self.root.geometry('1000x195')  # Width=1000 (increased for wider scale), Height=195
         self.root.resizable(False, False)  # bsSingle border style (line 5)
         self.root.configure(bg='#f0f0f0')  # clBtnFace (line 9)
 
         # Center on screen (Position = poDesktopCenter, line 17)
         self.root.update_idletasks()
-        x = (self.root.winfo_screenwidth() // 2) - (779 // 2)
+        x = (self.root.winfo_screenwidth() // 2) - (1000 // 2)
         y = (self.root.winfo_screenheight() // 2) - (195 // 2)
-        self.root.geometry(f'779x195+{x}+{y}')
+        self.root.geometry(f'1000x195+{x}+{y}')
 
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
@@ -249,7 +276,7 @@ class DynamicScaleInterface:
             font=('MS Sans Serif', 9), fg='red',
             bg='#f0f0f0', wraplength=150, justify='left'
         )
-        self.label_b.place(x=630, y=8, width=150, height=73)
+        self.label_b.place(x=840, y=8, width=150, height=73)
 
         # LabelIs (lines 68-81)
         self.label_is = tk.Label(
@@ -265,17 +292,17 @@ class DynamicScaleInterface:
             font=('MS Sans Serif', 12, 'bold'), fg='red',
             bg='#f0f0f0'
         )
-        self.label_than.place(x=589, y=3)
+        self.label_than.place(x=799, y=3)
 
         # ImageShow canvas (lines 97-105)
         self.image_show = tk.Canvas(
             self.root, bg='white', highlightthickness=0
         )
-        self.image_show.place(x=154, y=53, width=476, height=142)
+        self.image_show.place(x=165, y=53, width=670, height=142)
 
         # PanelScale container (lines 106-143)
         self.panel_scale = tk.Frame(self.root, bg='#f0f0f0', relief='flat')
-        self.panel_scale.place(x=154, y=28, width=475, height=25)
+        self.panel_scale.place(x=165, y=28, width=670, height=25)
 
         # PanelLess (lines 115-128)
         self.panel_less = tk.Button(
@@ -484,7 +511,7 @@ class DynamicScaleInterface:
 
         # Build panels (lines 231-281)
         wi = 0  # Width accumulator (line 230)
-        panel_scale_width = 475  # PanelScale.Width
+        panel_scale_width = 670  # PanelScale.Width (increased for better readability)
 
         for i in range(li, -1, -1):  # Reverse order (line 231)
             # Create new panel
@@ -582,6 +609,7 @@ class DynamicScaleInterface:
     def show_image(self):
         """
         Draw visual scale representation (ShowImage procedure, lines 84-107).
+        Enhanced with descriptive labels.
         """
         self.image_show.delete('all')
 
@@ -589,7 +617,7 @@ class DynamicScaleInterface:
             return
 
         # Find min/max positions (lines 90-99)
-        min_l = 475
+        min_l = 670
         max_r = 0
 
         for panel in self.scale_panels:
@@ -599,15 +627,27 @@ class DynamicScaleInterface:
                 hint = panel.hint
 
                 # Draw vertical tick (lines 94-95)
-                self.image_show.create_line(x, 0, x, 10, fill='black')
+                self.image_show.create_line(x, 0, x, 10, fill='black', width=2)
+
+                # Get descriptive label based on direction and grade
+                label_text = hint
+                for grade in range(1, 10):
+                    if hint == PREF[grade]:
+                        # Use descriptive labels based on direction
+                        if self.reverse == 0:  # Less
+                            label_text = PREF_LESS[grade]
+                        else:  # More
+                            label_text = PREF_MORE[grade]
+                        break
 
                 # Draw vertical text (line 93)
                 center_x = x + width // 2
                 # Tkinter doesn't support vertical text natively, so we rotate
                 self.image_show.create_text(
-                    center_x - 5, 50,
-                    text=hint, angle=90, anchor='w',
-                    font=('Arial', 8)
+                    center_x - 8, 60,
+                    text=label_text, angle=90, anchor='w',
+                    font=('Arial', 9, 'bold'),
+                    fill='#333333'
                 )
 
                 min_l = min(min_l, x)
@@ -615,8 +655,8 @@ class DynamicScaleInterface:
 
         # Draw final tick and horizontal line (lines 101-104)
         if max_r > 0:
-            self.image_show.create_line(max_r - 1, 0, max_r - 1, 10, fill='black')
-            self.image_show.create_line(min_l, 0, max_r - 1, 0, fill='black')
+            self.image_show.create_line(max_r - 1, 0, max_r - 1, 10, fill='black', width=2)
+            self.image_show.create_line(min_l, 0, max_r - 1, 0, fill='black', width=3)
 
     def panel_scale_click(self, panel):
         """
