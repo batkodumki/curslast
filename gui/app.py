@@ -492,12 +492,12 @@ class ComparisonPanel(ttk.Frame):
         )
         instruction_label.pack(pady=5)
 
-        # Контейнер для динамічних панелей
+        # Контейнер для динамічних панелей (centered with more padding)
         scale_container = tk.Frame(middle_frame, bg='white')
-        scale_container.pack(fill='x', padx=20, pady=10)
+        scale_container.pack(fill='x', padx=50, pady=10)
 
-        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40)
-        self.panel_scale.pack(fill='x')
+        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40, width=600)
+        self.panel_scale.pack(anchor='center')
         self.panel_scale.pack_propagate(False)
 
         # Початкові кнопки Less/More
@@ -672,7 +672,7 @@ class ComparisonPanel(ttk.Frame):
 
         # Build panels
         wi = 0  # Width accumulator
-        panel_scale_width = 475
+        panel_scale_width = 600  # Increased from 475 for better balance
 
         for i in range(li, -1, -1):  # Reverse order
             # Create new panel
@@ -754,6 +754,7 @@ class ComparisonPanel(ttk.Frame):
                 wi += width
                 left = panel_scale_width * (1 - self.reverse) - wi + 2 * wi * self.reverse - width * self.reverse
                 new_pin.hint = PREF[grade]
+                new_pin.config(text=PREF[grade])  # Add text label to panel
 
             # Position panel
             new_pin.place(x=int(left), y=0, width=int(width), height=30)
@@ -777,7 +778,7 @@ class ComparisonPanel(ttk.Frame):
             return
 
         # Find min/max positions
-        min_l = 475
+        min_l = 600  # Updated to match panel_scale_width
         max_r = 0
 
         for panel in self.scale_panels:
