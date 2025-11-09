@@ -301,6 +301,7 @@ class ComparisonPanel(ttk.Frame):
 
         # UI component references
         self.scale_panels: List[tk.Button] = []
+        self.scale_dividers: List[tk.Frame] = []  # Track divider lines between buttons
         self.directional_indicator: Optional[tk.Button] = None  # Track the gray Less/More box
         self.panel_less: Optional[tk.Button] = None
         self.panel_more: Optional[tk.Button] = None
@@ -662,6 +663,11 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        # Clear dividers
+        for divider in self.scale_dividers:
+            divider.destroy()
+        self.scale_dividers.clear()
+
         # Clear directional indicator if it exists
         if self.directional_indicator:
             self.directional_indicator.destroy()
@@ -723,6 +729,11 @@ class ComparisonPanel(ttk.Frame):
         for panel in self.scale_panels:
             panel.destroy()
         self.scale_panels.clear()
+
+        # Clear existing dividers
+        for divider in self.scale_dividers:
+            divider.destroy()
+        self.scale_dividers.clear()
 
         # IMPORTANT: Clear directional indicator (gray Less/More button) if it exists
         # This prevents the old indicator from staying visible when rebuilding the scale
@@ -846,6 +857,18 @@ class ComparisonPanel(ttk.Frame):
 
             # Position panel (updated height for modern design)
             new_pin.place(x=int(left), y=0, width=int(width), height=32)
+
+            # Add thin black divider line to the right of this button (except for last button)
+            if i < li:
+                divider_x = int(left + width)
+                divider = tk.Frame(
+                    self.panel_scale,
+                    bg='black',
+                    width=1,
+                    height=32
+                )
+                divider.place(x=divider_x, y=0, width=1, height=32)
+                self.scale_dividers.append(divider)
 
             # Bind events
             new_pin.config(command=lambda p=new_pin: self.panel_scale_click(p))
@@ -1129,6 +1152,10 @@ class ComparisonPanel(ttk.Frame):
         for panel in self.scale_panels:
             panel.destroy()
         self.scale_panels.clear()
+
+        for divider in self.scale_dividers:
+            divider.destroy()
+        self.scale_dividers.clear()
 
         if self.directional_indicator:
             self.directional_indicator.destroy()
