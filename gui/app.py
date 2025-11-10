@@ -477,25 +477,6 @@ class ComparisonPanel(ttk.Frame):
         )
         self.progress_label.pack(pady=(5, 10))
 
-        # Кнопка підтвердження (Confirm button to skip/confirm current comparison) з сучасним дизайном
-        self.confirm_button = tk.Button(
-            right_panel,
-            text='Підтверджую',
-            relief='flat',
-            cursor='hand2',
-            bg=COLORS['secondary'],
-            fg='white',
-            font=('Segoe UI', 11, 'bold'),
-            state='normal',
-            activebackground=COLORS['success'],
-            activeforeground='white',
-            command=self._confirm_current_selection,
-            padx=20,
-            pady=8,
-            borderwidth=0
-        )
-        self.confirm_button.pack(pady=12)
-
         # Заголовок з назвами об'єктів - сучасний card-стиль
         header_frame = tk.Frame(right_panel, bg=COLORS['surface'], relief='flat', bd=0, highlightthickness=1, highlightbackground=COLORS['border'])
         header_frame.pack(fill='x', pady=10)
@@ -600,16 +581,6 @@ class ComparisonPanel(ttk.Frame):
         self.panel_more.hint = LESS_MORE[1]
         self.panel_more.config(command=lambda: self.panel_scale_click(self.panel_more))
 
-        # Візуалізація шкали з сучасним дизайном
-        self.image_show = tk.Canvas(
-            middle_frame,
-            bg=COLORS['surface'],
-            highlightthickness=1,
-            highlightbackground=COLORS['border']
-        )
-        self.image_show.pack(fill='both', expand=True, padx=25, pady=(10, 15))
-        self.image_show.configure(height=100)
-
         # ===== КНОПКИ НАВІГАЦІЇ =====
         nav_frame = ttk.Frame(right_panel)
         nav_frame.pack(pady=15)
@@ -627,6 +598,28 @@ class ComparisonPanel(ttk.Frame):
             command=self.on_back
         )
         return_btn.pack(side='left', padx=5)
+
+        # Кнопка підтвердження (Confirm button) - positioned at bottom right
+        confirm_frame = ttk.Frame(right_panel)
+        confirm_frame.pack(side='bottom', fill='x', padx=20, pady=(10, 20))
+
+        self.confirm_button = tk.Button(
+            confirm_frame,
+            text='Підтверджую',
+            relief='flat',
+            cursor='hand2',
+            bg=COLORS['secondary'],
+            fg='white',
+            font=('Segoe UI', 11, 'bold'),
+            state='normal',
+            activebackground=COLORS['success'],
+            activeforeground='white',
+            command=self._confirm_current_selection,
+            padx=20,
+            pady=8,
+            borderwidth=0
+        )
+        self.confirm_button.pack(side='right')
 
         # Create graphic hint window
         self.hint_window = GraphicHintWindow(self.winfo_toplevel())
@@ -697,9 +690,6 @@ class ComparisonPanel(ttk.Frame):
 
         # Reset center label
         self.label_than.config(text='')
-
-        # Clear visualization
-        self.image_show.delete('all')
 
     # ===== DYNAMIC SCALE INTERFACE METHODS =====
 
@@ -889,41 +879,9 @@ class ComparisonPanel(ttk.Frame):
         self.show_image()
 
     def show_image(self):
-        """Draw visual scale representation з сучасним дизайном"""
-        self.image_show.delete('all')
-
-        if self.reverse == -1:
-            return
-
-        # Find min/max positions
-        min_l = 800  # Updated to match panel_scale_width
-        max_r = 0
-
-        for panel in self.scale_panels:
-            if panel.winfo_exists() and panel.winfo_ismapped():
-                x = panel.winfo_x()
-                width = panel.winfo_width()
-                hint = panel.hint
-
-                # Draw vertical tick з сучасним кольором
-                self.image_show.create_line(x, 0, x, 10, fill=COLORS['text_secondary'], width=2)
-
-                # Draw vertical text з кращою типографікою
-                center_x = x + width // 2
-                self.image_show.create_text(
-                    center_x - 5, 50,
-                    text=hint, angle=90, anchor='w',
-                    font=('Segoe UI', 9),
-                    fill=COLORS['text_primary']
-                )
-
-                min_l = min(min_l, x)
-                max_r = max(max_r, x + width)
-
-        # Draw final tick and horizontal line з сучасним дизайном
-        if max_r > 0:
-            self.image_show.create_line(max_r - 1, 0, max_r - 1, 10, fill=COLORS['text_secondary'], width=2)
-            self.image_show.create_line(min_l, 0, max_r - 1, 0, fill=COLORS['text_secondary'], width=2)
+        """Draw visual scale representation - removed as visualization canvas was removed"""
+        # Canvas visualization has been removed for cleaner layout
+        pass
 
     def panel_scale_click(self, panel):
         """Handle scale panel click (progressive refinement logic)"""
