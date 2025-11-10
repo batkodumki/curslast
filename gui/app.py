@@ -18,6 +18,23 @@ from gui.calculations import (
 )
 
 
+# Modern Design Color Palette
+COLORS = {
+    'primary': '#4A90E2',        # Soft blue
+    'primary_dark': '#357ABD',   # Darker blue
+    'secondary': '#50C878',      # Soft emerald green
+    'accent': '#FF6B6B',         # Soft coral red
+    'accent_light': '#FF8E8E',   # Lighter coral
+    'background': '#F7F9FC',     # Light gray-blue background
+    'surface': '#FFFFFF',        # White surface
+    'text_primary': '#2C3E50',   # Dark blue-gray
+    'text_secondary': '#7F8C8D', # Medium gray
+    'border': '#E0E6ED',         # Light border
+    'hover': '#5BA3F5',          # Lighter blue for hover
+    'success': '#27AE60',        # Green
+    'warning': '#F39C12',        # Orange
+}
+
 # Constants from Delphi implementation
 PREF = [
     '',  # Index 0 not used
@@ -55,14 +72,14 @@ class GraphicHintWindow(tk.Toplevel):
         super().__init__(parent)
         self.withdraw()
         self.overrideredirect(True)
-        self.configure(bg='white', relief='solid', borderwidth=1)
+        self.configure(bg=COLORS['surface'], relief='solid', borderwidth=2, highlightbackground=COLORS['border'])
 
         self.data = 0.0
         self.hint_text = ""
 
-        # Canvas for drawing
-        self.canvas = tk.Canvas(self, width=250, height=200, bg='white', highlightthickness=0)
-        self.canvas.pack()
+        # Canvas for drawing with modern styling
+        self.canvas = tk.Canvas(self, width=250, height=200, bg=COLORS['surface'], highlightthickness=0)
+        self.canvas.pack(padx=5, pady=5)
 
     def show_hint(self, x: int, y: int, text: str, data: float):
         """Display hint at position with graphical visualization."""
@@ -89,11 +106,11 @@ class GraphicHintWindow(tk.Toplevel):
 
         if self.data == 0.0:
             # Simple text hint
-            self.canvas.create_text(125, 100, text=self.hint_text, font=('Arial', 10))
+            self.canvas.create_text(125, 100, text=self.hint_text, font=('Segoe UI', 10), fill=COLORS['text_primary'])
             return
 
         # Draw hint text at top
-        self.canvas.create_text(125, 15, text=self.hint_text, font=('Arial', 10, 'bold'))
+        self.canvas.create_text(125, 15, text=self.hint_text, font=('Segoe UI', 10, 'bold'), fill=COLORS['text_primary'])
 
         if self.data < 0:
             # Scale type diagram
@@ -105,7 +122,7 @@ class GraphicHintWindow(tk.Toplevel):
                 -5: 'Donegan-Dodd-McMasters\n\nFormula:\nexp(arctanh((g-1)/14*√3))'
             }
             text = scale_info.get(self.data, '')
-            self.canvas.create_text(125, 110, text=text, font=('Arial', 9), justify='center')
+            self.canvas.create_text(125, 110, text=text, font=('Segoe UI', 9), justify='center', fill=COLORS['text_secondary'])
         elif self.data < 1:
             # Object B preferred
             self.draw_balance_tilted_right()
@@ -113,15 +130,15 @@ class GraphicHintWindow(tk.Toplevel):
 
             xe, ye = 25, 25
 
-            # Draw heavier weight on right (Object B)
+            # Draw heavier weight on right (Object B) - modern coral color
             bottom = 180
             top = bottom - round(ye * data_)
             left = 180 - round(xe * data_ / 2)
             right = left + round(xe * data_)
-            self.canvas.create_rectangle(left, top, right, bottom, fill='red', outline='black', width=2)
+            self.canvas.create_rectangle(left, top, right, bottom, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
 
-            # Draw lighter weight on left (Object A)
-            self.canvas.create_rectangle(50, 145, 75, 170, fill='blue', outline='black', width=2)
+            # Draw lighter weight on left (Object A) - modern blue color
+            self.canvas.create_rectangle(50, 145, 75, 170, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
         else:
             # Object A preferred or equal
             self.draw_balance_tilted_left()
@@ -129,33 +146,33 @@ class GraphicHintWindow(tk.Toplevel):
 
             xe, ye = 25, 25
 
-            # Draw heavier weight on left (Object A)
+            # Draw heavier weight on left (Object A) - modern blue color
             bottom = 180
             top = bottom - round(ye * data_)
             left = 70 - round(xe * data_ / 2)
             right = left + round(xe * data_)
-            self.canvas.create_rectangle(left, top, right, bottom, fill='blue', outline='black', width=2)
+            self.canvas.create_rectangle(left, top, right, bottom, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
 
-            # Draw lighter weight on right (Object B)
-            self.canvas.create_rectangle(180, 145, 205, 170, fill='red', outline='black', width=2)
+            # Draw lighter weight on right (Object B) - modern coral color
+            self.canvas.create_rectangle(180, 145, 205, 170, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
 
             if self.data == 1:
                 # Equal - show question mark
-                self.canvas.create_text(125, 100, text='?', font=('Arial', 60), fill='red')
+                self.canvas.create_text(125, 100, text='?', font=('Segoe UI', 60), fill=COLORS['accent'])
 
     def draw_balance_tilted_right(self):
         """Draw balance scale tilted to the right (B heavier)."""
-        # Fulcrum (triangle)
-        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill='gray', outline='black', width=2)
-        # Beam tilted right
-        self.canvas.create_line(40, 125, 210, 105, width=4, fill='brown')
+        # Fulcrum (triangle) - modern gray
+        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill=COLORS['text_secondary'], outline=COLORS['text_primary'], width=2)
+        # Beam tilted right - modern dark color
+        self.canvas.create_line(40, 125, 210, 105, width=4, fill=COLORS['text_primary'])
 
     def draw_balance_tilted_left(self):
         """Draw balance scale tilted to the left (A heavier)."""
-        # Fulcrum (triangle)
-        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill='gray', outline='black', width=2)
-        # Beam tilted left
-        self.canvas.create_line(40, 105, 210, 125, width=4, fill='brown')
+        # Fulcrum (triangle) - modern gray
+        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill=COLORS['text_secondary'], outline=COLORS['text_primary'], width=2)
+        # Beam tilted left - modern dark color
+        self.canvas.create_line(40, 105, 210, 125, width=4, fill=COLORS['text_primary'])
 
 
 class InputPanel(ttk.Frame):
@@ -169,52 +186,56 @@ class InputPanel(ttk.Frame):
         self._create_widgets()
 
     def _create_widgets(self):
-        # Заголовок
-        title = ttk.Label(self, text="Введення альтернатив", font=('Arial', 16, 'bold'))
-        title.pack(pady=20)
+        # Add top spacing
+        ttk.Frame(self, height=30).pack()
 
-        # Інструкція
+        # Заголовок з більш виразним стилем
+        title = ttk.Label(self, text="Введення альтернатив", font=('Segoe UI', 24, 'bold'), foreground=COLORS['text_primary'])
+        title.pack(pady=(10, 5))
+
+        # Інструкція з кращою читабельністю
         instruction = ttk.Label(
             self,
             text="Введіть назви об'єктів для порівняння (мінімум 2):",
-            font=('Arial', 10)
+            font=('Segoe UI', 11),
+            foreground=COLORS['text_secondary']
         )
-        instruction.pack(pady=10)
+        instruction.pack(pady=(5, 25))
 
-        # Фрейм для полів введення
+        # Фрейм для полів введення з кращим відступом
         self.entries_frame = ttk.Frame(self)
-        self.entries_frame.pack(pady=10, padx=20, fill='both', expand=True)
+        self.entries_frame.pack(pady=10, padx=40, fill='both', expand=True)
 
         # Початкові поля
         for i in range(3):
             self._add_entry_field(i)
 
-        # Кнопка додати поле
+        # Кнопка додати поле з кращим стилем
         add_btn = ttk.Button(
             self,
             text="+ Додати альтернативу",
             command=self._add_field
         )
-        add_btn.pack(pady=10)
+        add_btn.pack(pady=15)
 
-        # Кнопка далі
+        # Кнопка далі з більшим акцентом
         next_btn = ttk.Button(
             self,
             text="Далі →",
             command=self._validate_and_next,
             style='Accent.TButton'
         )
-        next_btn.pack(pady=20)
+        next_btn.pack(pady=(10, 30))
 
     def _add_entry_field(self, index):
         """Додати поле для введення альтернативи"""
         frame = ttk.Frame(self.entries_frame)
-        frame.pack(fill='x', pady=5)
+        frame.pack(fill='x', pady=8)
 
-        label = ttk.Label(frame, text=f"Альтернатива {index + 1}:", width=15)
-        label.pack(side='left', padx=5)
+        label = ttk.Label(frame, text=f"Альтернатива {index + 1}:", width=18, font=('Segoe UI', 10), foreground=COLORS['text_primary'])
+        label.pack(side='left', padx=(5, 10))
 
-        entry = ttk.Entry(frame, width=40)
+        entry = ttk.Entry(frame, width=40, font=('Segoe UI', 10))
         entry.pack(side='left', padx=5, fill='x', expand=True)
 
         self.entries.append(entry)
@@ -280,6 +301,7 @@ class ComparisonPanel(ttk.Frame):
 
         # UI component references
         self.scale_panels: List[tk.Button] = []
+        self.scale_dividers: List[tk.Frame] = []  # Track divider lines between buttons
         self.directional_indicator: Optional[tk.Button] = None  # Track the gray Less/More box
         self.panel_less: Optional[tk.Button] = None
         self.panel_more: Optional[tk.Button] = None
@@ -296,54 +318,70 @@ class ComparisonPanel(ttk.Frame):
         return pairs
 
     def _create_widgets(self):
-        # Контейнер для всього вмісту - горизонтальне розділення
+        # Контейнер для всього вмісту - горизонтальне розділення з кращими відступами
         main_container = ttk.Frame(self)
-        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+        main_container.pack(fill='both', expand=True, padx=20, pady=15)
 
         # ===== ЛІВА ПАНЕЛЬ - Налаштування шкали =====
-        left_panel = ttk.LabelFrame(main_container, text="Налаштування шкали", width=250)
-        left_panel.pack(side='left', fill='y', padx=(0, 10))
+        left_panel = ttk.LabelFrame(main_container, text="Налаштування шкали", width=270)
+        left_panel.pack(side='left', fill='y', padx=(0, 15))
         left_panel.pack_propagate(False)
 
-        # Scale type choice panel
-        self.panel_scale_choice = tk.Frame(left_panel, relief='raised', bd=2)
-        self.panel_scale_choice.pack(padx=5, pady=5, fill='both')
+        # Scale type choice panel з сучасним дизайном
+        self.panel_scale_choice = tk.Frame(left_panel, relief='flat', bd=0, bg=COLORS['background'])
+        self.panel_scale_choice.pack(padx=8, pady=8, fill='both')
 
         # Button and spin
-        button_spin_frame = tk.Frame(self.panel_scale_choice)
+        button_spin_frame = tk.Frame(self.panel_scale_choice, bg=COLORS['background'])
         button_spin_frame.pack(fill='x')
 
         self.panel_scale_button_choice = tk.Button(
             button_spin_frame,
             text='Тип шкали',
-            relief='sunken',
+            relief='flat',
             cursor='hand2',
-            font=('Arial', 9),
-            command=self.toggle_scale_choice
+            font=('Segoe UI', 10),
+            bg=COLORS['primary'],
+            fg='white',
+            activebackground=COLORS['primary_dark'],
+            activeforeground='white',
+            command=self.toggle_scale_choice,
+            padx=10,
+            pady=5
         )
         self.panel_scale_button_choice.pack(side='left', fill='x', expand=True)
 
-        # Spin buttons
-        spin_frame = tk.Frame(button_spin_frame)
-        spin_frame.pack(side='right')
+        # Spin buttons з кращим дизайном
+        spin_frame = tk.Frame(button_spin_frame, bg=COLORS['background'])
+        spin_frame.pack(side='right', padx=(5, 0))
 
         self.spin_up = tk.Button(
             spin_frame,
             text='▲',
             command=self.spin_up_click,
-            width=2
+            width=2,
+            relief='flat',
+            bg=COLORS['surface'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['hover'],
+            font=('Segoe UI', 8)
         )
-        self.spin_up.pack(side='top')
+        self.spin_up.pack(side='top', pady=(0, 2))
 
         self.spin_down = tk.Button(
             spin_frame,
             text='▼',
             command=self.spin_down_click,
-            width=2
+            width=2,
+            relief='flat',
+            bg=COLORS['surface'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['hover'],
+            font=('Segoe UI', 8)
         )
         self.spin_down.pack(side='bottom')
 
-        # Radio buttons for scale types
+        # Radio buttons for scale types з сучасним дизайном
         self.scale_type_var = tk.IntVar(value=1)
 
         self.rbut_integer = tk.Radiobutton(
@@ -352,10 +390,14 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=1,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 10),
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['background'],
+            selectcolor=COLORS['primary'],
             command=self.scale_choice_changed
         )
-        self.rbut_integer.pack(anchor='w', padx=5, pady=2)
+        self.rbut_integer.pack(anchor='w', padx=8, pady=4)
         self.rbut_integer.data = -1
 
         self.rbut_balanced = tk.Radiobutton(
@@ -364,10 +406,14 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=2,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 10),
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['background'],
+            selectcolor=COLORS['primary'],
             command=self.scale_choice_changed
         )
-        self.rbut_balanced.pack(anchor='w', padx=5, pady=2)
+        self.rbut_balanced.pack(anchor='w', padx=8, pady=4)
         self.rbut_balanced.data = -2
 
         self.rbut_power = tk.Radiobutton(
@@ -376,10 +422,14 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=3,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 10),
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['background'],
+            selectcolor=COLORS['primary'],
             command=self.scale_choice_changed
         )
-        self.rbut_power.pack(anchor='w', padx=5, pady=2)
+        self.rbut_power.pack(anchor='w', padx=8, pady=4)
         self.rbut_power.data = -3
 
         self.rbut_mazheng = tk.Radiobutton(
@@ -388,10 +438,14 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=4,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 10),
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['background'],
+            selectcolor=COLORS['primary'],
             command=self.scale_choice_changed
         )
-        self.rbut_mazheng.pack(anchor='w', padx=5, pady=2)
+        self.rbut_mazheng.pack(anchor='w', padx=8, pady=4)
         self.rbut_mazheng.data = -4
 
         self.rbut_dodd = tk.Radiobutton(
@@ -400,143 +454,160 @@ class ComparisonPanel(ttk.Frame):
             variable=self.scale_type_var,
             value=5,
             cursor='hand2',
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['background'],
+            selectcolor=COLORS['primary'],
             command=self.scale_choice_changed
         )
-        self.rbut_dodd.pack(anchor='w', padx=5, pady=2)
+        self.rbut_dodd.pack(anchor='w', padx=8, pady=4)
         self.rbut_dodd.data = -5
 
         # ===== ПРАВА ПАНЕЛЬ - Область порівняння =====
         right_panel = ttk.Frame(main_container)
         right_panel.pack(side='left', fill='both', expand=True)
 
-        # Прогрес
+        # Прогрес з кращою типографікою
         self.progress_label = ttk.Label(
             right_panel,
             text="",
-            font=('Arial', 12, 'bold')
+            font=('Segoe UI', 13, 'bold'),
+            foreground=COLORS['text_secondary']
         )
-        self.progress_label.pack(pady=5)
+        self.progress_label.pack(pady=(5, 10))
 
-        # Кнопка підтвердження (Confirm button to skip/confirm current comparison)
+        # Кнопка підтвердження (Confirm button to skip/confirm current comparison) з сучасним дизайном
         self.confirm_button = tk.Button(
             right_panel,
             text='Підтверджую',
-            relief='raised',
+            relief='flat',
             cursor='hand2',
-            bg='#4CAF50',
+            bg=COLORS['secondary'],
             fg='white',
-            font=('Arial', 11, 'bold'),
+            font=('Segoe UI', 11, 'bold'),
             state='normal',
-            command=self._confirm_current_selection
+            activebackground=COLORS['success'],
+            activeforeground='white',
+            command=self._confirm_current_selection,
+            padx=20,
+            pady=8,
+            borderwidth=0
         )
-        self.confirm_button.pack(pady=10)
+        self.confirm_button.pack(pady=12)
 
-        # Заголовок з назвами об'єктів
-        header_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
+        # Заголовок з назвами об'єктів - сучасний card-стиль
+        header_frame = tk.Frame(right_panel, bg=COLORS['surface'], relief='flat', bd=0, highlightthickness=1, highlightbackground=COLORS['border'])
         header_frame.pack(fill='x', pady=10)
 
-        # Label A (зліва)
+        # Label A (зліва) з сучасними кольорами
         self.label_a = tk.Label(
             header_frame,
             text="Object A",
-            font=('Arial', 12, 'bold'),
-            fg='#0066cc',
-            bg='white',
+            font=('Segoe UI', 13, 'bold'),
+            fg=COLORS['primary'],
+            bg=COLORS['surface'],
             wraplength=200,
             justify='left'
         )
-        self.label_a.pack(side='left', padx=20, pady=10)
+        self.label_a.pack(side='left', padx=25, pady=15)
 
-        # Center labels
-        center_frame = tk.Frame(header_frame, bg='white')
+        # Center labels з кращим дизайном
+        center_frame = tk.Frame(header_frame, bg=COLORS['surface'])
         center_frame.pack(side='left', expand=True)
 
         self.label_is = tk.Label(
             center_frame,
             text='впливає',
-            font=('Arial', 11),
-            fg='#666666',
-            bg='white'
+            font=('Segoe UI', 11),
+            fg=COLORS['text_secondary'],
+            bg=COLORS['surface']
         )
         self.label_is.pack(pady=2)
 
         self.label_than = tk.Label(
             center_frame,
             text='',
-            font=('Arial', 11, 'bold'),
-            fg='red',
-            bg='white'
+            font=('Segoe UI', 12, 'bold'),
+            fg=COLORS['accent'],
+            bg=COLORS['surface']
         )
         self.label_than.pack(pady=2)
 
-        # Label B (справа)
+        # Label B (справа) з сучасними кольорами
         self.label_b = tk.Label(
             header_frame,
             text="Object B",
-            font=('Arial', 12, 'bold'),
-            fg='#cc0066',
-            bg='white',
+            font=('Segoe UI', 13, 'bold'),
+            fg=COLORS['accent'],
+            bg=COLORS['surface'],
             wraplength=200,
             justify='right'
         )
-        self.label_b.pack(side='right', padx=20, pady=10)
+        self.label_b.pack(side='right', padx=25, pady=15)
 
-        # Середня частина - панель шкали
-        middle_frame = tk.Frame(right_panel, bg='white', relief='solid', bd=1)
+        # Середня частина - панель шкали з сучасним дизайном
+        middle_frame = tk.Frame(right_panel, bg=COLORS['surface'], relief='flat', bd=0, highlightthickness=1, highlightbackground=COLORS['border'])
         middle_frame.pack(fill='x', pady=10)
 
-        # Інструкція
+        # Інструкція з кращим дизайном
         instruction_label = ttk.Label(
             middle_frame,
             text="Оберіть рівень впливу:",
-            font=('Arial', 10)
+            font=('Segoe UI', 11),
+            foreground=COLORS['text_secondary']
         )
-        instruction_label.pack(pady=5)
+        instruction_label.pack(pady=(10, 5))
 
         # Контейнер для динамічних панелей (centered with more padding)
-        scale_container = tk.Frame(middle_frame, bg='white')
-        scale_container.pack(fill='x', padx=50, pady=10)
+        scale_container = tk.Frame(middle_frame, bg=COLORS['surface'])
+        scale_container.pack(fill='x', padx=50, pady=15)
 
-        self.panel_scale = tk.Frame(scale_container, bg='#f0f0f0', relief='flat', height=40, width=800)
+        self.panel_scale = tk.Frame(scale_container, bg=COLORS['background'], relief='flat', height=45, width=800)
         self.panel_scale.pack(anchor='center')
         self.panel_scale.pack_propagate(False)
 
-        # Початкові кнопки Less/More
+        # Початкові кнопки Less/More з сучасним дизайном
         self.panel_less = tk.Button(
             self.panel_scale,
             text='Менше впливає',
-            relief='raised',
+            relief='flat',
             cursor='hand2',
-            bg='#cc0000',
+            bg=COLORS['accent'],
             fg='white',
-            font=('Arial', 10, 'bold')
+            font=('Segoe UI', 11, 'bold'),
+            activebackground=COLORS['accent_light'],
+            activeforeground='white',
+            borderwidth=0
         )
-        self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
+        self.panel_less.place(x=0, y=7, relwidth=0.48, height=32)
         self.panel_less.hint = LESS_MORE[0]
         self.panel_less.config(command=lambda: self.panel_scale_click(self.panel_less))
 
         self.panel_more = tk.Button(
             self.panel_scale,
             text='Більше впливає',
-            relief='raised',
+            relief='flat',
             cursor='hand2',
-            bg='#cc0000',
+            bg=COLORS['accent'],
             fg='white',
-            font=('Arial', 10, 'bold')
+            font=('Segoe UI', 11, 'bold'),
+            activebackground=COLORS['accent_light'],
+            activeforeground='white',
+            borderwidth=0
         )
-        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+        self.panel_more.place(relx=0.52, y=7, relwidth=0.48, height=32)
         self.panel_more.hint = LESS_MORE[1]
         self.panel_more.config(command=lambda: self.panel_scale_click(self.panel_more))
 
-        # Візуалізація шкали
+        # Візуалізація шкали з сучасним дизайном
         self.image_show = tk.Canvas(
             middle_frame,
-            bg='white',
+            bg=COLORS['surface'],
             highlightthickness=1,
-            highlightbackground='gray'
+            highlightbackground=COLORS['border']
         )
-        self.image_show.pack(fill='both', expand=True, padx=20, pady=5)
+        self.image_show.pack(fill='both', expand=True, padx=25, pady=(10, 15))
         self.image_show.configure(height=100)
 
         # ===== КНОПКИ НАВІГАЦІЇ =====
@@ -592,14 +663,19 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        # Clear dividers
+        for divider in self.scale_dividers:
+            divider.destroy()
+        self.scale_dividers.clear()
+
         # Clear directional indicator if it exists
         if self.directional_indicator:
             self.directional_indicator.destroy()
             self.directional_indicator = None
 
-        # Reset button positions
-        self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
-        self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+        # Reset button positions (updated for new design)
+        self.panel_less.place(x=0, y=7, relwidth=0.48, height=32)
+        self.panel_more.place(relx=0.52, y=7, relwidth=0.48, height=32)
 
         self._update_display()
 
@@ -654,6 +730,11 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        # Clear existing dividers
+        for divider in self.scale_dividers:
+            divider.destroy()
+        self.scale_dividers.clear()
+
         # IMPORTANT: Clear directional indicator (gray Less/More button) if it exists
         # This prevents the old indicator from staying visible when rebuilding the scale
         if self.directional_indicator:
@@ -662,9 +743,9 @@ class ComparisonPanel(ttk.Frame):
 
         if self.reverse == -1:
             # Initial state - just show Less/More
-            # Make sure Less/More buttons are visible
-            self.panel_less.place(x=0, y=5, relwidth=0.48, height=30)
-            self.panel_more.place(relx=0.52, y=5, relwidth=0.48, height=30)
+            # Make sure Less/More buttons are visible (updated for new design)
+            self.panel_less.place(x=0, y=7, relwidth=0.48, height=32)
+            self.panel_more.place(relx=0.52, y=7, relwidth=0.48, height=32)
             return
 
         # Hide the original Less/More buttons when showing progressive scale
@@ -688,22 +769,26 @@ class ComparisonPanel(ttk.Frame):
         wi = 0  # Width accumulator
         panel_scale_width = 800  # Increased for better visual clarity
 
+        # Store divider positions to create them after all buttons
+        divider_positions = []
+
         for i in range(li, -1, -1):  # Reverse order
-            # Create new panel
+            # Create new panel з сучасним дизайном
             new_pin = tk.Button(
                 self.panel_scale,
                 text='',
-                relief='raised',
+                relief='flat',
                 cursor='hand2',
-                font=('MS Sans Serif', 8)
+                font=('Segoe UI', 9),
+                borderwidth=0
             )
 
             if i == li:
-                # Last panel - Less/More indicator
+                # Last panel - Less/More indicator з сучасним дизайном
                 width = panel_scale_width // 9
                 wi = width
                 caption = LESS_MORE[1 - self.reverse]
-                new_pin.config(text=caption, bg='#f0f0f0', fg='black')
+                new_pin.config(text=caption, bg=COLORS['border'], fg=COLORS['text_primary'])
                 new_pin.hint = caption
 
                 if self.reverse == 1:  # More
@@ -737,7 +822,7 @@ class ComparisonPanel(ttk.Frame):
                         is_grouped = True
 
                     if is_grouped and self.scale_type_var.get() != 1:
-                        # Grouped panels
+                        # Grouped panels з сучасним дизайном
                         if (scale_str in ['25679', '2589']) and grade_char == '2':
                             width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
                                         (self.integer_by_scale(2) + self.integer_by_scale(3) +
@@ -749,32 +834,37 @@ class ComparisonPanel(ttk.Frame):
                         elif (scale_str in ['23459', '25679']) and grade_char == '9':
                             width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
                                         (self.integer_by_scale(8) + self.integer_by_scale(9)))
-                        new_pin.config(bg='#f0f0f0', fg='black')
+                        new_pin.config(bg=COLORS['border'], fg=COLORS['text_primary'])
                     else:
-                        # Active panels
+                        # Active panels з сучасним дизайном
                         if self.scale_type_var.get() == 1:  # Integer
                             width = width // (len(scale_str) - 2)
                         else:
                             width = round(panel_scale_width * 16 / 9 / 2 / sum_w *
                                         self.integer_by_scale(grade))
-                        new_pin.config(bg='red', fg='white')
+                        new_pin.config(bg=COLORS['accent'], fg='white', activebackground=COLORS['accent_light'])
                 else:
-                    # Regular scale
+                    # Regular scale з сучасним дизайном
                     if self.scale_type_var.get() == 1:  # Integer
                         width = panel_scale_width / 2 * 16 / 9 / li
                         width = int(width)
                     else:
                         width = round(panel_scale_width / 2 * 16 / 9 / sum_w *
                                     self.integer_by_scale(1.5 + (li - i - 0.5) * (9.5 - 1.5) / li))
-                    new_pin.config(bg='red', fg='white')
+                    new_pin.config(bg=COLORS['accent'], fg='white', activebackground=COLORS['accent_light'])
 
                 wi += width
                 left = panel_scale_width * (1 - self.reverse) - wi + 2 * wi * self.reverse - width * self.reverse
                 new_pin.hint = PREF[grade]
                 new_pin.config(text=PREF[grade])  # Add text label to panel
 
-            # Position panel
-            new_pin.place(x=int(left), y=0, width=int(width), height=30)
+            # Position panel (updated height for modern design)
+            new_pin.place(x=int(left), y=0, width=int(width), height=32)
+
+            # Store divider position (to create after all buttons)
+            if i < li:
+                divider_x = int(left + width)
+                divider_positions.append(divider_x)
 
             # Bind events
             new_pin.config(command=lambda p=new_pin: self.panel_scale_click(p))
@@ -784,11 +874,22 @@ class ComparisonPanel(ttk.Frame):
             if i < li:
                 self.scale_panels.append(new_pin)
 
+        # Create all dividers AFTER all buttons (so they appear on top)
+        for divider_x in divider_positions:
+            divider = tk.Frame(
+                self.panel_scale,
+                bg='black',
+                width=1,
+                height=32
+            )
+            divider.place(x=divider_x, y=0, width=1, height=32)
+            self.scale_dividers.append(divider)
+
         # Update visualization
         self.show_image()
 
     def show_image(self):
-        """Draw visual scale representation"""
+        """Draw visual scale representation з сучасним дизайном"""
         self.image_show.delete('all')
 
         if self.reverse == -1:
@@ -804,24 +905,25 @@ class ComparisonPanel(ttk.Frame):
                 width = panel.winfo_width()
                 hint = panel.hint
 
-                # Draw vertical tick
-                self.image_show.create_line(x, 0, x, 10, fill='black')
+                # Draw vertical tick з сучасним кольором
+                self.image_show.create_line(x, 0, x, 10, fill=COLORS['text_secondary'], width=2)
 
-                # Draw vertical text
+                # Draw vertical text з кращою типографікою
                 center_x = x + width // 2
                 self.image_show.create_text(
                     center_x - 5, 50,
                     text=hint, angle=90, anchor='w',
-                    font=('Arial', 8)
+                    font=('Segoe UI', 9),
+                    fill=COLORS['text_primary']
                 )
 
                 min_l = min(min_l, x)
                 max_r = max(max_r, x + width)
 
-        # Draw final tick and horizontal line
+        # Draw final tick and horizontal line з сучасним дизайном
         if max_r > 0:
-            self.image_show.create_line(max_r - 1, 0, max_r - 1, 10, fill='black')
-            self.image_show.create_line(min_l, 0, max_r - 1, 0, fill='black')
+            self.image_show.create_line(max_r - 1, 0, max_r - 1, 10, fill=COLORS['text_secondary'], width=2)
+            self.image_show.create_line(min_l, 0, max_r - 1, 0, fill=COLORS['text_secondary'], width=2)
 
     def panel_scale_click(self, panel):
         """Handle scale panel click (progressive refinement logic)"""
@@ -840,7 +942,7 @@ class ComparisonPanel(ttk.Frame):
             self.rel = 1.0  # Chose Less/More
             self.res = 5.5  # Middle value
             self.scale_str = '259'
-        elif self.scale_str == '259' and panel.cget('bg') == 'red':
+        elif self.scale_str == '259' and panel.cget('bg') == COLORS['accent']:
             # Second level - medium scale
             grad = 1
             for idx, char in enumerate(self.scale_str, 1):
@@ -857,7 +959,7 @@ class ComparisonPanel(ttk.Frame):
 
             self.rel = 3.0  # Chose from 3 options
             self.res = 1.5 + (grad - 0.5) * (9.5 - 1.5) / 3
-        elif panel.cget('bg') == '#f0f0f0':
+        elif panel.cget('bg') == COLORS['border']:
             # Click on grouped panel
             if hint == PREF[2]:
                 self.scale_str = '23459'
@@ -1058,6 +1160,10 @@ class ComparisonPanel(ttk.Frame):
             panel.destroy()
         self.scale_panels.clear()
 
+        for divider in self.scale_dividers:
+            divider.destroy()
+        self.scale_dividers.clear()
+
         if self.directional_indicator:
             self.directional_indicator.destroy()
             self.directional_indicator = None
@@ -1095,53 +1201,77 @@ class ResultsPanel(ttk.Frame):
         self.consistency = check_consistency(self.matrix, self.weights)
 
     def _create_widgets(self):
-        # Заголовок
-        title = ttk.Label(self, text="Результати", font=('Arial', 16, 'bold'))
-        title.pack(pady=20)
+        # Add top spacing
+        ttk.Frame(self, height=20).pack()
 
-        # Таблиця результатів
+        # Заголовок з сучасним дизайном
+        title = ttk.Label(self, text="Результати", font=('Segoe UI', 26, 'bold'), foreground=COLORS['text_primary'])
+        title.pack(pady=(10, 25))
+
+        # Таблиця результатів з кращими відступами
         table_frame = ttk.Frame(self)
-        table_frame.pack(pady=10, padx=20, fill='both', expand=True)
+        table_frame.pack(pady=15, padx=40, fill='both', expand=True)
 
-        # Заголовки таблиці
+        # Заголовки таблиці з сучасним дизайном
         headers = ['Альтернатива', 'Вага', 'Ранг']
         for col, header in enumerate(headers):
-            label = ttk.Label(
+            label = tk.Label(
                 table_frame,
                 text=header,
-                font=('Arial', 11, 'bold'),
-                relief='solid',
-                borderwidth=1,
-                width=20
+                font=('Segoe UI', 12, 'bold'),
+                bg=COLORS['primary'],
+                fg='white',
+                relief='flat',
+                borderwidth=0,
+                padx=15,
+                pady=10
             )
             label.grid(row=0, column=col, sticky='nsew', padx=1, pady=1)
 
-        # Дані таблиці
+        # Дані таблиці з сучасним дизайном
         for i, alternative in enumerate(self.alternatives):
+            row_bg = COLORS['surface'] if i % 2 == 0 else COLORS['background']
+
             # Альтернатива
-            label = ttk.Label(
+            label = tk.Label(
                 table_frame,
                 text=alternative,
-                relief='solid',
-                borderwidth=1
+                font=('Segoe UI', 10),
+                bg=row_bg,
+                fg=COLORS['text_primary'],
+                relief='flat',
+                borderwidth=0,
+                padx=15,
+                pady=8,
+                anchor='w'
             )
             label.grid(row=i + 1, column=0, sticky='nsew', padx=1, pady=1)
 
             # Вага
-            label = ttk.Label(
+            label = tk.Label(
                 table_frame,
                 text=f"{self.weights[i]:.4f}",
-                relief='solid',
-                borderwidth=1
+                font=('Segoe UI', 10),
+                bg=row_bg,
+                fg=COLORS['text_primary'],
+                relief='flat',
+                borderwidth=0,
+                padx=15,
+                pady=8
             )
             label.grid(row=i + 1, column=1, sticky='nsew', padx=1, pady=1)
 
             # Ранг
-            label = ttk.Label(
+            label = tk.Label(
                 table_frame,
                 text=str(self.ranks[i]),
-                relief='solid',
-                borderwidth=1
+                font=('Segoe UI', 10, 'bold'),
+                bg=row_bg,
+                fg=COLORS['primary'],
+                relief='flat',
+                borderwidth=0,
+                padx=15,
+                pady=8
             )
             label.grid(row=i + 1, column=2, sticky='nsew', padx=1, pady=1)
 
@@ -1149,9 +1279,9 @@ class ResultsPanel(ttk.Frame):
         for col in range(3):
             table_frame.columnconfigure(col, weight=1)
 
-        # Показники узгодженості
-        consistency_frame = ttk.LabelFrame(self, text="Показники узгодженості", padding=20)
-        consistency_frame.pack(pady=20, padx=20, fill='x')
+        # Показники узгодженості з сучасним дизайном
+        consistency_frame = ttk.LabelFrame(self, text="Показники узгодженості", padding=25)
+        consistency_frame.pack(pady=20, padx=40, fill='x')
 
         lambda_max = self.consistency['lambda_max']
         ci = self.consistency['CI']
@@ -1161,43 +1291,56 @@ class ResultsPanel(ttk.Frame):
         ttk.Label(
             consistency_frame,
             text=f"λ_max = {lambda_max:.4f}",
-            font=('Arial', 10)
-        ).pack(anchor='w', pady=2)
+            font=('Segoe UI', 11),
+            foreground=COLORS['text_primary']
+        ).pack(anchor='w', pady=3)
 
         ttk.Label(
             consistency_frame,
             text=f"Індекс узгодженості (CI) = {ci:.4f}",
-            font=('Arial', 10)
-        ).pack(anchor='w', pady=2)
+            font=('Segoe UI', 11),
+            foreground=COLORS['text_primary']
+        ).pack(anchor='w', pady=3)
 
-        cr_color = 'green' if is_consistent else 'red'
+        cr_color = COLORS['success'] if is_consistent else COLORS['accent']
         cr_label = ttk.Label(
             consistency_frame,
             text=f"Коефіцієнт узгодженості (CR) = {cr:.4f}",
-            font=('Arial', 10, 'bold'),
+            font=('Segoe UI', 11, 'bold'),
             foreground=cr_color
         )
-        cr_label.pack(anchor='w', pady=2)
+        cr_label.pack(anchor='w', pady=3)
 
-        # Рекомендації
-        recommendations_frame = ttk.LabelFrame(self, text="Рекомендації", padding=20)
-        recommendations_frame.pack(pady=10, padx=20, fill='both', expand=True)
+        # Рекомендації з сучасним дизайном
+        recommendations_frame = ttk.LabelFrame(self, text="Рекомендації", padding=25)
+        recommendations_frame.pack(pady=(10, 15), padx=40, fill='both', expand=True)
 
         for recommendation in self.consistency['recommendations']:
             ttk.Label(
                 recommendations_frame,
                 text=f"• {recommendation}",
-                font=('Arial', 10),
-                wraplength=600
-            ).pack(anchor='w', pady=2)
+                font=('Segoe UI', 10),
+                foreground=COLORS['text_secondary'],
+                wraplength=700
+            ).pack(anchor='w', pady=3)
 
-        # Кнопка почати заново
-        restart_btn = ttk.Button(
+        # Кнопка почати заново з кращим дизайном
+        restart_btn = tk.Button(
             self,
             text="Почати заново",
-            command=self.on_restart
+            command=self.on_restart,
+            relief='flat',
+            cursor='hand2',
+            bg=COLORS['primary'],
+            fg='white',
+            font=('Segoe UI', 11, 'bold'),
+            activebackground=COLORS['primary_dark'],
+            activeforeground='white',
+            padx=30,
+            pady=10,
+            borderwidth=0
         )
-        restart_btn.pack(pady=20)
+        restart_btn.pack(pady=(10, 25))
 
 
 class MainApplication(tk.Tk):
@@ -1207,13 +1350,27 @@ class MainApplication(tk.Tk):
         super().__init__()
 
         self.title("Експертне оцінювання - Динамічний інтерфейс шкалування")
-        self.geometry("1000x700")
+        self.geometry("1100x750")
 
-        # Стиль
+        # Сучасний дизайн вікна
+        self.configure(bg=COLORS['background'])
+
+        # Стиль з сучасними налаштуваннями
         self.style = ttk.Style()
         self.style.theme_use('clam')
 
-        # Створити контейнер для панелей
+        # Налаштування кольорів для ttk компонентів
+        self.style.configure('TFrame', background=COLORS['background'])
+        self.style.configure('TLabel', background=COLORS['background'], foreground=COLORS['text_primary'], font=('Segoe UI', 10))
+        self.style.configure('TButton', background=COLORS['primary'], foreground='white', borderwidth=0, focuscolor='none', font=('Segoe UI', 10))
+        self.style.map('TButton', background=[('active', COLORS['hover'])])
+        self.style.configure('Accent.TButton', background=COLORS['secondary'], foreground='white', font=('Segoe UI', 11, 'bold'))
+        self.style.map('Accent.TButton', background=[('active', COLORS['success'])])
+        self.style.configure('TLabelframe', background=COLORS['background'], foreground=COLORS['text_primary'], borderwidth=1, relief='flat')
+        self.style.configure('TLabelframe.Label', background=COLORS['background'], foreground=COLORS['text_primary'], font=('Segoe UI', 11, 'bold'))
+        self.style.configure('TEntry', fieldbackground=COLORS['surface'], foreground=COLORS['text_primary'], borderwidth=1)
+
+        # Створити контейнер для панелей з сучасним фоном
         self.container = ttk.Frame(self)
         self.container.pack(fill='both', expand=True)
 
