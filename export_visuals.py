@@ -9,7 +9,12 @@ from PIL import Image, ImageDraw, ImageFont
 
 # Визначення рівнів впливу та відповідних значень
 # Значення показують інтенсивність впливу (більше значення = більший вплив)
+# Відповідає списку з gui/scales.py
 IMPACT_LEVELS = {
+    "Менше": {
+        "filename": "menshe.png",
+        "value": 1.0
+    },
     "Слабко або незначно": {
         "filename": "slabko-abo-neznachno.png",
         "value": 1.5
@@ -41,10 +46,6 @@ IMPACT_LEVELS = {
     "Абсолютно": {
         "filename": "absolutno.png",
         "value": 9.0
-    },
-    "Абсолютна перевага": {
-        "filename": "absolutna-perevaha.png",
-        "value": 9.5
     }
 }
 
