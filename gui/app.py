@@ -5,6 +5,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import numpy as np
+import os
+from PIL import Image, ImageTk
 
 from gui.scales import get_scale, get_all_scale_names, ScaleType
 from gui.calculations import (
@@ -13,6 +15,20 @@ from gui.calculations import (
     build_comparison_matrix,
     check_consistency
 )
+
+
+# Mapping of scale labels to image filenames
+LABEL_TO_IMAGE = {
+    "Слабко або незначно": "slabko-abo-neznachno.png",
+    "Середнє": "serednie.png",
+    "Більше ніж середнє": "bil-she-nizh-serednie.png",
+    "Сильно": "sylno.png",
+    "Більше ніж сильно": "bil-she-nizh-sylno.png",
+    "Дуже сильно": "duzhe-sylno.png",
+    "Дуже-дуже сильно": "duzhe-duzhe-sylno.png",
+    "Абсолютно": "absolutno.png",
+    "Абсолютна перевага": "absolutna-perevaha.png"
+}
 
 
 class InputPanel(ttk.Frame):
@@ -132,6 +148,10 @@ class ComparisonPanel(ttk.Frame):
         self.gradations_var = tk.IntVar(value=3)  # Початкова кількість градацій - 3
         self.selected_section = None
 
+        # Image display
+        self.current_image = None
+        self.image_label = None
+
         self._create_widgets()
         self._update_gradations_label()  # Ініціалізувати стан кнопок градацій
         self._update_display()
@@ -226,6 +246,14 @@ class ComparisonPanel(ttk.Frame):
         self.bar_canvas.pack(fill='x', pady=10)
         self.bar_canvas.bind('<Configure>', self._on_canvas_resize)
         self.bar_canvas.bind('<Button-1>', self._on_bar_click)
+        self.bar_canvas.bind('<Motion>', self._on_bar_hover)
+
+        # Image display area for balance scale visualization
+        image_frame = ttk.LabelFrame(right_panel, text="Візуалізація порівняння", padding=10)
+        image_frame.pack(fill='both', expand=True, pady=10)
+
+        self.image_label = tk.Label(image_frame, bg='white')
+        self.image_label.pack(fill='both', expand=True)
 
         # Кнопка "Підтверджую"
         confirm_btn = ttk.Button(
@@ -262,6 +290,11 @@ class ComparisonPanel(ttk.Frame):
         # Скинути вибір секції
         self.selected_section = None
 
+        # Скинути зображення
+        if self.image_label:
+            self.image_label.config(image='', text='Виберіть рівень впливу')
+            self.current_image = None
+
         # Оновити лейбл градацій
         self._update_gradations_label()
 
@@ -275,6 +308,10 @@ class ComparisonPanel(ttk.Frame):
             self.gradations_var.set(current + 1)
             self._update_gradations_label()
             self.selected_section = None
+            # Скинути зображення
+            if self.image_label:
+                self.image_label.config(image='', text='Виберіть рівень впливу')
+                self.current_image = None
             self._draw_bar()
 
     def _decrease_gradations(self):
@@ -284,6 +321,10 @@ class ComparisonPanel(ttk.Frame):
             self.gradations_var.set(current - 1)
             self._update_gradations_label()
             self.selected_section = None
+            # Скинути зображення
+            if self.image_label:
+                self.image_label.config(image='', text='Виберіть рівень впливу')
+                self.current_image = None
             self._draw_bar()
 
     def _update_gradations_label(self):
@@ -318,6 +359,61 @@ class ComparisonPanel(ttk.Frame):
         if 0 <= section_index < gradations:
             self.selected_section = section_index
             self._draw_bar()
+            self._update_image_display(section_index)
+
+    def _on_bar_hover(self, event):
+        """Обробник наведення миші на бар (preview image)"""
+        if self.selected_section is not None:
+            # Якщо вже вибрано секцію, не оновлювати при наведенні
+            return
+
+        gradations = self.gradations_var.get()
+        canvas_width = self.bar_canvas.winfo_width()
+        section_width = canvas_width / gradations
+
+        section_index = int(event.x / section_width)
+        if 0 <= section_index < gradations:
+            self._update_image_display(section_index)
+
+    def _update_image_display(self, section_index):
+        """Оновити відображення зображення для вибраної секції"""
+        scale_name = self.scale_var.get()
+        gradations = self.gradations_var.get()
+        scale = get_scale(scale_name, gradations)
+
+        # Отримати підпис для секції
+        if hasattr(scale, 'labels') and section_index < len(scale.labels):
+            label = scale.labels[section_index]
+
+            # Знайти відповідне зображення
+            if label in LABEL_TO_IMAGE:
+                image_filename = LABEL_TO_IMAGE[label]
+                image_path = os.path.join('exported_visuals', image_filename)
+
+                if os.path.exists(image_path):
+                    try:
+                        # Завантажити зображення
+                        img = Image.open(image_path)
+
+                        # Масштабувати зображення для відображення (зберігаючи пропорції)
+                        display_width = 600
+                        display_height = 400
+                        img.thumbnail((display_width, display_height), Image.Resampling.LANCZOS)
+
+                        # Конвертувати для Tkinter
+                        self.current_image = ImageTk.PhotoImage(img)
+
+                        # Оновити label
+                        self.image_label.config(image=self.current_image)
+                    except Exception as e:
+                        # Якщо помилка завантаження, показати повідомлення
+                        self.image_label.config(image='', text=f'Помилка завантаження зображення:\n{label}')
+                else:
+                    self.image_label.config(image='', text=f'Зображення не знайдено:\n{label}')
+            else:
+                self.image_label.config(image='', text=f'Візуалізація:\n{label}')
+        else:
+            self.image_label.config(image='', text='Виберіть рівень впливу')
 
     def _draw_bar(self):
         """Намалювати горизонтальний бар з секціями"""
@@ -389,6 +485,11 @@ class ComparisonPanel(ttk.Frame):
 
         # Скинути вибір
         self.selected_section = None
+
+        # Скинути зображення
+        if self.image_label:
+            self.image_label.config(image='', text='Виберіть рівень впливу')
+            self.current_image = None
 
         # Перемалювати бар
         self._draw_bar()
