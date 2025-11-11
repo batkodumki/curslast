@@ -1,280 +1,178 @@
 """
 Модуль для експорту візуальних порівнянь у PNG зображення
-Генерує зображення терезів з кубиками для кожного рівня впливу
+Генерує спрощені зображення терезів з кубиками на балці
 """
 
 import os
-from PIL import Image, ImageDraw, ImageFont
+import math
+from PIL import Image, ImageDraw
 
 
-# Визначення рівнів впливу та відповідних значень
-# Значення показують інтенсивність впливу (більше значення = більший вплив)
-# Відповідає списку з gui/scales.py
+# Визначення рівнів впливу (тільки More напрямок, без Less і проміжного "Більше ніж сильно")
 IMPACT_LEVELS = {
-    "Менше": {
-        "filename": "menshe.png",
-        "value": 1.0
+    "slabko-abo-neznachno": {
+        "tilt": 0.05,      # мінімальний нахил
+        "size_ratio": 1.15  # правий трохи більший
     },
-    "Слабко або незначно": {
-        "filename": "slabko-abo-neznachno.png",
-        "value": 1.5
+    "serednie": {
+        "tilt": 0.15,
+        "size_ratio": 1.35
     },
-    "Середнє": {
-        "filename": "serednie.png",
-        "value": 3.0
+    "bil-she-nizh-serednie": {
+        "tilt": 0.25,
+        "size_ratio": 1.55
     },
-    "Більше ніж середнє": {
-        "filename": "bil-she-nizh-serednie.png",
-        "value": 4.5
+    "sylno": {
+        "tilt": 0.35,
+        "size_ratio": 1.75
     },
-    "Сильно": {
-        "filename": "sylno.png",
-        "value": 5.0
+    "duzhe-sylno": {
+        "tilt": 0.45,
+        "size_ratio": 2.0
     },
-    "Більше ніж сильно": {
-        "filename": "bil-she-nizh-sylno.png",
-        "value": 6.0
+    "duzhe-duzhe-sylno": {
+        "tilt": 0.60,
+        "size_ratio": 2.3
     },
-    "Дуже сильно": {
-        "filename": "duzhe-sylno.png",
-        "value": 7.0
-    },
-    "Дуже-дуже сильно": {
-        "filename": "duzhe-duzhe-sylno.png",
-        "value": 8.0
-    },
-    "Абсолютно": {
-        "filename": "absolutno.png",
-        "value": 9.0
+    "absolutno": {
+        "tilt": 0.75,      # екстремальний нахил
+        "size_ratio": 2.7
     }
 }
 
 
-class BalanceScaleVisualizer:
-    """Клас для створення візуалізацій терезів"""
+class SimpleBalanceVisualizer:
+    """Клас для створення спрощених візуалізацій терезів"""
 
-    def __init__(self, width=800, height=600):
-        self.width = width
-        self.height = height
-        self.bg_color = (255, 255, 255)  # Білий фон
+    def __init__(self, size=512):
+        self.size = size
+        self.bg_color = (248, 248, 248)  # Світлий фон
 
-        # Кольори (з app.py)
-        self.primary_color = (74, 144, 226)      # Синій для лівого кубика
-        self.accent_color = (255, 107, 107)      # Коралевий для правого кубика
-        self.text_color = (44, 62, 80)           # Темний текст
-        self.gray_color = (127, 140, 141)        # Сірий для терезів
+        # Кольори
+        self.left_cube_color = (74, 144, 226)    # Синій
+        self.right_cube_color = (255, 107, 107)  # Червоний
+        self.outline_color = (60, 60, 60)        # Темно-сірий
+        self.beam_color = (100, 100, 100)        # Сірий
 
-    def draw_balance_scale(self, draw, center_x, center_y, tilt_angle=0):
+    def draw_cube_on_beam(self, draw, center_x, beam_y, size, color):
         """
-        Намалювати терези з нахилом
-        tilt_angle: додатний - нахил вліво (лівий важчий), від'ємний - вправо
+        Намалювати 3D кубик що стоїть НА балці
+        center_x: центр кубика по X
+        beam_y: Y-координата верху балки (кубик стоїть на цій лінії)
+        size: розмір кубика
         """
-        # Розміри терезів
-        fulcrum_size = 30
-        beam_length = 200
-        chain_height = 60
+        half_size = size // 2
 
-        # Намалювати опору (трикутник)
-        fulcrum_points = [
-            (center_x, center_y - fulcrum_size),
-            (center_x - fulcrum_size, center_y + 15),
-            (center_x + fulcrum_size, center_y + 15)
-        ]
-        draw.polygon(fulcrum_points, fill=self.gray_color, outline=self.text_color)
+        # Кубик стоїть на балці, тому його низ на beam_y
+        bottom_y = beam_y
+        top_y = beam_y - size
+        left_x = center_x - half_size
+        right_x = center_x + half_size
 
-        # Обчислити позиції кінців балки з урахуванням нахилу
-        left_x = center_x - beam_length
-        right_x = center_x + beam_length
+        # 3D ефект: глибина для перспективи
+        depth = size // 3
 
-        # Нахил: позитивний - ліва сторона вище, негативний - права сторона вище
-        left_y = center_y - fulcrum_size - int(tilt_angle * 20)
-        right_y = center_y - fulcrum_size + int(tilt_angle * 20)
+        # Передня грань (основна)
+        draw.rectangle(
+            [left_x, top_y, right_x, bottom_y],
+            fill=color,
+            outline=self.outline_color,
+            width=2
+        )
 
-        # Намалювати балку
-        draw.line([(left_x, left_y), (right_x, right_y)],
-                 fill=self.text_color, width=6)
-
-        # Намалювати ланцюжки для чаш
-        # Ліва чаша
-        draw.line([(left_x - 40, left_y), (left_x - 40, left_y + chain_height)],
-                 fill=self.gray_color, width=3)
-        draw.line([(left_x + 40, left_y), (left_x + 40, left_y + chain_height)],
-                 fill=self.gray_color, width=3)
-
-        # Права чаша
-        draw.line([(right_x - 40, right_y), (right_x - 40, right_y + chain_height)],
-                 fill=self.gray_color, width=3)
-        draw.line([(right_x + 40, right_y), (right_x + 40, right_y + chain_height)],
-                 fill=self.gray_color, width=3)
-
-        # Намалювати чаші (плоскі платформи)
-        plate_width = 90
-        plate_height = 8
-
-        # Ліва чаша
-        left_plate_y = left_y + chain_height
-        draw.rectangle([left_x - plate_width//2, left_plate_y,
-                       left_x + plate_width//2, left_plate_y + plate_height],
-                      fill=self.gray_color, outline=self.text_color, width=2)
-
-        # Права чаша
-        right_plate_y = right_y + chain_height
-        draw.rectangle([right_x - plate_width//2, right_plate_y,
-                       right_x + plate_width//2, right_plate_y + plate_height],
-                      fill=self.gray_color, outline=self.text_color, width=2)
-
-        return left_x, left_plate_y, right_x, right_plate_y
-
-    def draw_cube(self, draw, center_x, bottom_y, size, color, label=None):
-        """
-        Намалювати кубик НА чаші (bottom_y - це низ кубика)
-        label: текст для відображення на кубику (наприклад, значення)
-        """
-        # Кубик малюється знизу вгору
-        top_y = bottom_y - size
-        left_x = center_x - size // 2
-        right_x = center_x + size // 2
-
-        # Основний прямокутник (передня грань)
-        draw.rectangle([left_x, top_y, right_x, bottom_y],
-                      fill=color, outline=self.text_color, width=3)
-
-        # Додати 3D ефект (верхня грань)
-        depth = size // 4
-        top_points = [
+        # Верхня грань (паралелограм, світліший)
+        lighter_color = tuple(min(c + 40, 255) for c in color)
+        top_face = [
             (left_x, top_y),
             (left_x + depth, top_y - depth),
             (right_x + depth, top_y - depth),
             (right_x, top_y)
         ]
-        # Зробити верхню грань трохи світлішою
-        lighter_color = tuple(min(c + 30, 255) for c in color)
-        draw.polygon(top_points, fill=lighter_color, outline=self.text_color)
+        draw.polygon(top_face, fill=lighter_color, outline=self.outline_color)
 
-        # Права грань для 3D ефекту
-        right_points = [
+        # Права грань (паралелограм, темніший)
+        darker_color = tuple(max(c - 40, 0) for c in color)
+        right_face = [
             (right_x, top_y),
             (right_x + depth, top_y - depth),
             (right_x + depth, bottom_y - depth),
             (right_x, bottom_y)
         ]
-        # Зробити праву грань трохи темнішою
-        darker_color = tuple(max(c - 30, 0) for c in color)
-        draw.polygon(right_points, fill=darker_color, outline=self.text_color)
+        draw.polygon(right_face, fill=darker_color, outline=self.outline_color)
 
-        # Додати підпис значення на кубику
-        if label:
-            try:
-                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                                         max(16, size // 3))
-            except:
-                font = ImageFont.load_default()
-
-            # Центрувати текст на передній грані кубика
-            bbox = draw.textbbox((0, 0), label, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            text_x = center_x - text_width // 2
-            text_y = (top_y + bottom_y) // 2 - text_height // 2
-
-            # Білий текст з чорною обводкою для контрасту
-            for offset in [(-1,-1), (-1,1), (1,-1), (1,1)]:
-                draw.text((text_x + offset[0], text_y + offset[1]),
-                         label, font=font, fill=(0, 0, 0))
-            draw.text((text_x, text_y), label, font=font, fill=(255, 255, 255))
-
-    def create_visual(self, impact_name, impact_value):
+    def create_visual(self, tilt_angle, size_ratio):
         """
-        Створити візуалізацію для рівня впливу
-        impact_value: значення від 1 до 9.5
+        Створити візуалізацію терезів
+        tilt_angle: кут нахилу (0-1, де 1 = максимальний нахил)
+        size_ratio: співвідношення розміру правого кубика до лівого
         """
         # Створити зображення
-        img = Image.new('RGB', (self.width, self.height), self.bg_color)
+        img = Image.new('RGB', (self.size, self.size), self.bg_color)
         draw = ImageDraw.Draw(img)
 
-        # Центр терезів
-        center_x = self.width // 2
-        center_y = self.height // 2
+        # Параметри композиції
+        center_x = self.size // 2
+        center_y = self.size // 2
 
-        # Розрахувати нахил та розміри кубиків
-        # Більше значення = правий кубик важчий = нахил вправо (негативний кут)
-        # ВИПРАВЛЕНО: Використовуємо квадратний корінь замість кубічного для кращої візуалізації
-        # Це робить різницю більш помітною
-        scale_factor = (impact_value / 5.0) ** 0.5
+        # Розміри
+        beam_length = 180  # довжина балки від центру до краю
+        fulcrum_size = 25  # розмір опори-трикутника
+        base_cube_size = 50  # базовий розмір лівого кубика
 
-        # Базовий розмір кубика
-        base_cube_size = 60  # Збільшено для кращої видимості підписів
+        # Позиція опори (трикутника)
+        fulcrum_y = center_y + 40
+
+        # Намалювати опору (трикутник)
+        fulcrum_points = [
+            (center_x, fulcrum_y - fulcrum_size),
+            (center_x - fulcrum_size, fulcrum_y + 15),
+            (center_x + fulcrum_size, fulcrum_y + 15)
+        ]
+        draw.polygon(
+            fulcrum_points,
+            fill=self.beam_color,
+            outline=self.outline_color,
+            width=2
+        )
+
+        # Обчислити нахил балки
+        # Правий важчий - правий кінець нижче
+        max_tilt_pixels = 60  # максимальний зсув по Y
+        tilt_pixels = int(tilt_angle * max_tilt_pixels)
+
+        # Координати кінців балки
+        left_x = center_x - beam_length
+        right_x = center_x + beam_length
+
+        beam_base_y = fulcrum_y - fulcrum_size + 5  # балка трохи вище вершини трикутника
+        left_y = beam_base_y - tilt_pixels  # лівий кінець вище
+        right_y = beam_base_y + tilt_pixels  # правий кінець нижче
+
+        # Намалювати балку
+        draw.line(
+            [(left_x, left_y), (right_x, right_y)],
+            fill=self.outline_color,
+            width=4
+        )
 
         # Розміри кубиків
-        left_cube_size = base_cube_size  # Лівий завжди базовий (значення 1.0)
-        right_cube_size = int(base_cube_size * scale_factor)
+        left_cube_size = base_cube_size
+        right_cube_size = int(base_cube_size * size_ratio)
 
-        # Нахил терезів (більше значення = більший нахил)
-        # ВИПРАВЛЕНО: Збільшено діапазон нахилу для кращої візуалізації
-        if impact_value > 5.0:
-            tilt_angle = -min((impact_value - 5.0) / 3.0, 1.5)  # Нахил вправо (посилений)
-        elif impact_value < 5.0:
-            tilt_angle = min((5.0 - impact_value) / 2.5, 1.5)   # Нахил вліво (посилений)
-        else:
-            tilt_angle = 0  # Рівновага
+        # Позиції кубиків на балці
+        # Кубики стоять на балці, трохи ближче до країв
+        cube_offset = beam_length * 0.7  # 70% від довжини
 
-        # Намалювати терези та отримати позиції чаш
-        left_x, left_plate_y, right_x, right_plate_y = \
-            self.draw_balance_scale(draw, center_x, center_y, tilt_angle)
+        left_cube_x = int(center_x - cube_offset)
+        right_cube_x = int(center_x + cube_offset)
 
-        # Намалювати кубики НА чашах з підписами значень
-        # Кубики розміщуються на платформах чаш
-        # Лівий кубик завжди має значення 1.0 (базова одиниця)
-        self.draw_cube(draw, left_x, left_plate_y, left_cube_size,
-                      self.primary_color, label="1.0")
-        # Правий кубик показує значення впливу
-        self.draw_cube(draw, right_x, right_plate_y, right_cube_size,
-                      self.accent_color, label=f"{impact_value:.1f}")
+        # Y-координати верху балки де стоять кубики (інтерполюємо по балці)
+        left_cube_beam_y = int(left_y + (right_y - left_y) * (1 - cube_offset / beam_length) / 2)
+        right_cube_beam_y = int(left_y + (right_y - left_y) * (1 + cube_offset / beam_length) / 2)
 
-        # Додати підпис знизу
-        try:
-            # Спробувати завантажити системний шрифт
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-        except:
-            # Якщо не вдалося, використати стандартний
-            font = ImageFont.load_default()
-
-        # Намалювати текст по центру знизу
-        text = impact_name
-
-        # Отримати розмір тексту для центрування
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-
-        text_x = (self.width - text_width) // 2
-        text_y = self.height - 80
-
-        # Малювати текст з обводкою для кращої читабельності
-        # Обводка
-        for offset_x in [-2, 0, 2]:
-            for offset_y in [-2, 0, 2]:
-                if offset_x != 0 or offset_y != 0:
-                    draw.text((text_x + offset_x, text_y + offset_y),
-                            text, font=font, fill=(255, 255, 255))
-
-        # Основний текст
-        draw.text((text_x, text_y), text, font=font, fill=self.text_color)
-
-        # Додати пояснення шкали (легенда)
-        try:
-            legend_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-        except:
-            legend_font = ImageFont.load_default()
-
-        legend_text = f"Співвідношення ваги: 1.0 : {impact_value:.1f}"
-        bbox = draw.textbbox((0, 0), legend_text, font=legend_font)
-        legend_width = bbox[2] - bbox[0]
-        legend_x = (self.width - legend_width) // 2
-        legend_y = self.height - 45
-
-        draw.text((legend_x, legend_y), legend_text, font=legend_font,
-                 fill=self.gray_color)
+        # Намалювати кубики
+        self.draw_cube_on_beam(draw, left_cube_x, left_cube_beam_y, left_cube_size, self.left_cube_color)
+        self.draw_cube_on_beam(draw, right_cube_x, right_cube_beam_y, right_cube_size, self.right_cube_color)
 
         return img
 
@@ -287,22 +185,22 @@ def export_all_visuals(output_dir="exported_visuals"):
     os.makedirs(output_dir, exist_ok=True)
 
     # Створити візуалізатор
-    visualizer = BalanceScaleVisualizer(width=800, height=600)
+    visualizer = SimpleBalanceVisualizer(size=512)
 
     print(f"Генерація візуальних порівнянь у папку {output_dir}/\n")
 
     # Згенерувати зображення для кожного рівня
-    for impact_name, data in IMPACT_LEVELS.items():
-        filename = data["filename"]
-        value = data["value"]
+    for filename, params in IMPACT_LEVELS.items():
+        tilt = params["tilt"]
+        size_ratio = params["size_ratio"]
 
-        print(f"  Генерація: {filename} ({impact_name}, значення={value})")
+        print(f"  Генерація: {filename}.png (нахил={tilt:.2f}, розмір={size_ratio:.2f})")
 
         # Створити зображення
-        img = visualizer.create_visual(impact_name, value)
+        img = visualizer.create_visual(tilt, size_ratio)
 
         # Зберегти
-        output_path = os.path.join(output_dir, filename)
+        output_path = os.path.join(output_dir, f"{filename}.png")
         img.save(output_path, "PNG")
 
         print(f"    ✓ Збережено: {output_path}")
