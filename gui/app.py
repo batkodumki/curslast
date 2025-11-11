@@ -130,15 +130,17 @@ class GraphicHintWindow(tk.Toplevel):
 
             xe, ye = 25, 25
 
-            # Draw heavier weight on right (Object B) - modern coral color
-            bottom = 180
+            # Draw heavier weight on right (Object B) sitting on beam at y=105
+            bottom = 105
             top = bottom - round(ye * data_)
             left = 180 - round(xe * data_ / 2)
             right = left + round(xe * data_)
             self.canvas.create_rectangle(left, top, right, bottom, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
 
-            # Draw lighter weight on left (Object A) - modern blue color
-            self.canvas.create_rectangle(50, 145, 75, 170, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
+            # Draw lighter weight on left (Object A) sitting on beam at y=125
+            bottom = 125
+            top = bottom - ye
+            self.canvas.create_rectangle(50, top, 75, bottom, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
         else:
             # Object A preferred or equal
             self.draw_balance_tilted_left()
@@ -146,15 +148,17 @@ class GraphicHintWindow(tk.Toplevel):
 
             xe, ye = 25, 25
 
-            # Draw heavier weight on left (Object A) - modern blue color
-            bottom = 180
+            # Draw heavier weight on left (Object A) sitting on beam at y=105
+            bottom = 105
             top = bottom - round(ye * data_)
             left = 70 - round(xe * data_ / 2)
             right = left + round(xe * data_)
             self.canvas.create_rectangle(left, top, right, bottom, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
 
-            # Draw lighter weight on right (Object B) - modern coral color
-            self.canvas.create_rectangle(180, 145, 205, 170, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
+            # Draw lighter weight on right (Object B) sitting on beam at y=125
+            bottom = 125
+            top = bottom - ye
+            self.canvas.create_rectangle(180, top, 205, bottom, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
 
             if self.data == 1:
                 # Equal - show question mark
