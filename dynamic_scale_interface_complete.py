@@ -122,15 +122,21 @@ class GraphicHintWindow(tk.Toplevel):
 
             xe, ye = 25, 25  # Base dimensions (line 75)
 
-            # Draw heavier weight on right (Object B)
-            bottom = 180
-            top = bottom - round(ye * data_)
-            left = 180 - round(xe * data_ / 2)
-            right = left + round(xe * data_)
-            self.canvas.create_rectangle(left, top, right, bottom, fill='red', outline='black', width=2)
+            # Draw heavier weight on right (Object B) - ON the right pan
+            # Right pan position: (210, 105)
+            bottom_right = 105
+            top_right = bottom_right - round(ye * data_)
+            left_right = 210 - round(xe * data_ / 2)
+            right_right = left_right + round(xe * data_)
+            self.canvas.create_rectangle(left_right, top_right, right_right, bottom_right, fill='red', outline='black', width=2)
 
-            # Draw lighter weight on left (Object A)
-            self.canvas.create_rectangle(50, 145, 75, 170, fill='blue', outline='black', width=2)
+            # Draw lighter weight on left (Object A) - ON the left pan
+            # Left pan position: (40, 125)
+            bottom_left = 125
+            top_left = bottom_left - ye
+            left_left = 40 - xe // 2
+            right_left = left_left + xe
+            self.canvas.create_rectangle(left_left, top_left, right_left, bottom_left, fill='blue', outline='black', width=2)
         else:
             # Object A preferred or equal (lines 114-138)
             self.draw_balance_tilted_left()
@@ -138,15 +144,21 @@ class GraphicHintWindow(tk.Toplevel):
 
             xe, ye = 25, 25
 
-            # Draw heavier weight on left (Object A)
-            bottom = 180
-            top = bottom - round(ye * data_)
-            left = 70 - round(xe * data_ / 2)
-            right = left + round(xe * data_)
-            self.canvas.create_rectangle(left, top, right, bottom, fill='blue', outline='black', width=2)
+            # Draw heavier weight on left (Object A) - ON the left pan
+            # Left pan position: (40, 105)
+            bottom_left = 105
+            top_left = bottom_left - round(ye * data_)
+            left_left = 40 - round(xe * data_ / 2)
+            right_left = left_left + round(xe * data_)
+            self.canvas.create_rectangle(left_left, top_left, right_left, bottom_left, fill='blue', outline='black', width=2)
 
-            # Draw lighter weight on right (Object B)
-            self.canvas.create_rectangle(180, 145, 205, 170, fill='red', outline='black', width=2)
+            # Draw lighter weight on right (Object B) - ON the right pan
+            # Right pan position: (210, 125)
+            bottom_right = 125
+            top_right = bottom_right - ye
+            left_right = 210 - xe // 2
+            right_right = left_right + xe
+            self.canvas.create_rectangle(left_right, top_right, right_right, bottom_right, fill='red', outline='black', width=2)
 
             if self.data == 1:
                 # Equal - show question mark (lines 129-136)
