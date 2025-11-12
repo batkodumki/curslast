@@ -562,10 +562,114 @@ class ResultsPanel(ttk.Frame):
         # Перевірити узгодженість
         self.consistency = check_consistency(self.matrix, self.weights)
 
+    def _display_comparison_matrix(self):
+        """Відобразити матрицю парних порівнянь"""
+        n = len(self.alternatives)
+
+        # Frame для матриці
+        matrix_frame = ttk.LabelFrame(self, text="Матриця парних порівнянь", padding=10)
+        matrix_frame.pack(pady=10, padx=20, fill='both')
+
+        # Створити контейнер з прокруткою для великих матриць
+        canvas = tk.Canvas(matrix_frame, height=min(400, (n + 1) * 35))
+        scrollbar = ttk.Scrollbar(matrix_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Верхній лівий кут (пустий)
+        corner_label = tk.Label(
+            scrollable_frame,
+            text="",
+            relief='solid',
+            borderwidth=1,
+            width=15,
+            background='#e0e0e0'
+        )
+        corner_label.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
+
+        # Заголовки колонок (назви альтернатив)
+        for j in range(n):
+            header = tk.Label(
+                scrollable_frame,
+                text=self.alternatives[j],
+                font=('Arial', 9, 'bold'),
+                relief='solid',
+                borderwidth=1,
+                width=12,
+                background='#d0d0ff'
+            )
+            header.grid(row=0, column=j + 1, sticky='nsew', padx=1, pady=1)
+
+        # Рядки матриці
+        for i in range(n):
+            # Заголовок рядка (назва альтернативи)
+            row_header = tk.Label(
+                scrollable_frame,
+                text=self.alternatives[i],
+                font=('Arial', 9, 'bold'),
+                relief='solid',
+                borderwidth=1,
+                width=15,
+                background='#d0d0ff'
+            )
+            row_header.grid(row=i + 1, column=0, sticky='nsew', padx=1, pady=1)
+
+            # Значення матриці
+            for j in range(n):
+                value = self.matrix[i, j]
+
+                # Визначити колір фону: діагональ - жовта, інші - біла
+                if i == j:
+                    bg_color = '#ffffcc'
+                    text_color = 'black'
+                else:
+                    bg_color = 'white'
+                    text_color = 'black'
+
+                # Форматувати значення
+                if value >= 10:
+                    value_text = f"{value:.2f}"
+                else:
+                    value_text = f"{value:.4f}"
+
+                cell_label = tk.Label(
+                    scrollable_frame,
+                    text=value_text,
+                    relief='solid',
+                    borderwidth=1,
+                    width=12,
+                    background=bg_color,
+                    foreground=text_color
+                )
+                cell_label.grid(row=i + 1, column=j + 1, sticky='nsew', padx=1, pady=1)
+
+        # Пакуємо canvas та scrollbar
+        canvas.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+
+        # Пояснення
+        explanation = ttk.Label(
+            self,
+            text="Значення показують, у скільки разів альтернатива в рядку переважає альтернативу в колонці",
+            font=('Arial', 9, 'italic'),
+            foreground='#666666'
+        )
+        explanation.pack(pady=5)
+
     def _create_widgets(self):
         # Заголовок
         title = ttk.Label(self, text="Результати", font=('Arial', 16, 'bold'))
         title.pack(pady=20)
+
+        # Матриця парних порівнянь
+        self._display_comparison_matrix()
 
         # Таблиця результатів
         table_frame = ttk.Frame(self)
