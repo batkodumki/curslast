@@ -162,14 +162,16 @@ class GraphicHintWindow(tk.Toplevel):
             left_cube_size = min(base_size + math.log(ratio) * 10, max_size)
             right_cube_size = max(base_size / math.log(ratio + 1) * 1.5, min_size)
             # Tilt angle proportional to log of ratio (max ~20 degrees)
-            tilt_angle = -min(math.log(ratio) * 8, 25)
+            # Positive angle: left side tilts down (heavier)
+            tilt_angle = min(math.log(ratio) * 8, 25)
         else:
             # Right (B) is heavier
             ratio = min(1 / data, 9)  # Cap at 9 for extreme values
             right_cube_size = min(base_size + math.log(ratio) * 10, max_size)
             left_cube_size = max(base_size / math.log(ratio + 1) * 1.5, min_size)
             # Tilt angle proportional to log of ratio (max ~20 degrees)
-            tilt_angle = min(math.log(ratio) * 8, 25)
+            # Negative angle: right side tilts down (heavier)
+            tilt_angle = -min(math.log(ratio) * 8, 25)
 
         # Calculate beam endpoints with tilt
         # Convert angle to radians
