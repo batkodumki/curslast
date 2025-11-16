@@ -123,56 +123,120 @@ class GraphicHintWindow(tk.Toplevel):
             }
             text = scale_info.get(self.data, '')
             self.canvas.create_text(125, 110, text=text, font=('Segoe UI', 9), justify='center', fill=COLORS['text_secondary'])
-        elif self.data < 1:
-            # Object B preferred
-            self.draw_balance_tilted_right()
-            data_ = (1 / self.data) ** (1/3)  # Cube root for scaling
-
-            xe, ye = 25, 25
-
-            # Draw heavier weight on right (Object B) - modern coral color
-            bottom = 180
-            top = bottom - round(ye * data_)
-            left = 180 - round(xe * data_ / 2)
-            right = left + round(xe * data_)
-            self.canvas.create_rectangle(left, top, right, bottom, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
-
-            # Draw lighter weight on left (Object A) - modern blue color
-            self.canvas.create_rectangle(50, 145, 75, 170, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
         else:
-            # Object A preferred or equal
-            self.draw_balance_tilted_left()
-            data_ = self.data ** (1/3)  # Cube root for scaling
+            # Draw balance scale with proper proportions
+            self.draw_balance_with_cubes(self.data)
 
-            xe, ye = 25, 25
+    def draw_balance_with_cubes(self, data):
+        """Draw balance scale with properly proportioned cubes.
 
-            # Draw heavier weight on left (Object A) - modern blue color
-            bottom = 180
-            top = bottom - round(ye * data_)
-            left = 70 - round(xe * data_ / 2)
-            right = left + round(xe * data_)
-            self.canvas.create_rectangle(left, top, right, bottom, fill=COLORS['primary'], outline=COLORS['text_primary'], width=2)
+        Args:
+            data: Comparison value.
+                  data > 1: Object A (left) is heavier
+                  data < 1: Object B (right) is heavier
+                  data = 1: Equal weight
+        """
+        # Canvas geometry
+        fulcrum_x = 125
+        fulcrum_y = 110
+        beam_arm_length = 85  # pixels from fulcrum to each end
+        left_x = fulcrum_x - beam_arm_length  # 40
+        right_x = fulcrum_x + beam_arm_length  # 210
 
-            # Draw lighter weight on right (Object B) - modern coral color
-            self.canvas.create_rectangle(180, 145, 205, 170, fill=COLORS['accent'], outline=COLORS['text_primary'], width=2)
+        # Calculate cube sizes based on comparison value
+        # Use logarithmic scale for visual appeal (data ranges from ~0.11 to 9)
+        # Base cube size: 20 pixels
+        base_size = 20
+        max_size = 50
+        min_size = 15
 
-            if self.data == 1:
-                # Equal - show question mark
-                self.canvas.create_text(125, 100, text='?', font=('Segoe UI', 60), fill=COLORS['accent'])
+        if data == 1:
+            # Equal weights
+            left_cube_size = base_size
+            right_cube_size = base_size
+            tilt_angle = 0
+        elif data > 1:
+            # Left (A) is heavier
+            # Scale cube size using log to keep it visually reasonable
+            ratio = min(data, 9)  # Cap at 9 for extreme values
+            left_cube_size = min(base_size + math.log(ratio) * 10, max_size)
+            right_cube_size = max(base_size / math.log(ratio + 1) * 1.5, min_size)
+            # Tilt angle proportional to log of ratio (max ~20 degrees)
+            # Positive angle: left side tilts down (heavier)
+            tilt_angle = min(math.log(ratio) * 8, 25)
+        else:
+            # Right (B) is heavier
+            ratio = min(1 / data, 9)  # Cap at 9 for extreme values
+            right_cube_size = min(base_size + math.log(ratio) * 10, max_size)
+            left_cube_size = max(base_size / math.log(ratio + 1) * 1.5, min_size)
+            # Tilt angle proportional to log of ratio (max ~20 degrees)
+            # Negative angle: right side tilts down (heavier)
+            tilt_angle = -min(math.log(ratio) * 8, 25)
 
-    def draw_balance_tilted_right(self):
-        """Draw balance scale tilted to the right (B heavier)."""
-        # Fulcrum (triangle) - modern gray
-        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill=COLORS['text_secondary'], outline=COLORS['text_primary'], width=2)
-        # Beam tilted right - modern dark color
-        self.canvas.create_line(40, 125, 210, 105, width=4, fill=COLORS['text_primary'])
+        # Calculate beam endpoints with tilt
+        # Convert angle to radians
+        angle_rad = math.radians(tilt_angle)
 
-    def draw_balance_tilted_left(self):
-        """Draw balance scale tilted to the left (A heavier)."""
-        # Fulcrum (triangle) - modern gray
-        self.canvas.create_polygon(125, 110, 110, 140, 140, 140, fill=COLORS['text_secondary'], outline=COLORS['text_primary'], width=2)
-        # Beam tilted left - modern dark color
-        self.canvas.create_line(40, 105, 210, 125, width=4, fill=COLORS['text_primary'])
+        # Calculate y-coordinates for beam ends
+        left_y = fulcrum_y + beam_arm_length * math.sin(angle_rad)
+        right_y = fulcrum_y - beam_arm_length * math.sin(angle_rad)
+
+        # Draw fulcrum (triangle) - modern gray
+        self.canvas.create_polygon(
+            fulcrum_x, fulcrum_y,
+            fulcrum_x - 15, fulcrum_y + 30,
+            fulcrum_x + 15, fulcrum_y + 30,
+            fill=COLORS['text_secondary'],
+            outline=COLORS['text_primary'],
+            width=2
+        )
+
+        # Draw beam - modern dark color
+        self.canvas.create_line(
+            left_x, left_y,
+            right_x, right_y,
+            width=4,
+            fill=COLORS['text_primary']
+        )
+
+        # Draw left cube (Object A) - modern blue color
+        # Cube sits on top of beam, centered at beam endpoint
+        left_cube_x1 = left_x - left_cube_size / 2
+        left_cube_x2 = left_x + left_cube_size / 2
+        left_cube_y2 = left_y  # Bottom of cube at beam level
+        left_cube_y1 = left_y - left_cube_size  # Top of cube
+
+        self.canvas.create_rectangle(
+            left_cube_x1, left_cube_y1,
+            left_cube_x2, left_cube_y2,
+            fill=COLORS['primary'],
+            outline=COLORS['text_primary'],
+            width=2
+        )
+
+        # Draw right cube (Object B) - modern coral color
+        # Cube sits on top of beam, centered at beam endpoint
+        right_cube_x1 = right_x - right_cube_size / 2
+        right_cube_x2 = right_x + right_cube_size / 2
+        right_cube_y2 = right_y  # Bottom of cube at beam level
+        right_cube_y1 = right_y - right_cube_size  # Top of cube
+
+        self.canvas.create_rectangle(
+            right_cube_x1, right_cube_y1,
+            right_cube_x2, right_cube_y2,
+            fill=COLORS['accent'],
+            outline=COLORS['text_primary'],
+            width=2
+        )
+
+        # Special case: show question mark for equal weights
+        if data == 1:
+            self.canvas.create_text(
+                fulcrum_x, fulcrum_y - 30,
+                text='?',
+                font=('Segoe UI', 40),
+                fill=COLORS['accent']
+            )
 
 
 class InputPanel(ttk.Frame):
